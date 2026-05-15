@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0284c7">
+<title>Fish Pond · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #bae6fd 0%, #7dd3fc 30%, #38bdf8 60%, #0284c7 100%);
+  color:#0c4a6e;
+}
+.back-home-btn{ color:#0c4a6e; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.sun{
+  position:absolute; top:11vh; right:8vw;
+  font-size: clamp(56px, 13vw, 88px);
+  filter: drop-shadow(0 0 25px #fde047);
+  animation: heroFloat 3s ease-in-out infinite;
+}
+.lily{
+  position:absolute; pointer-events:none; opacity:0.7;
+  font-size: clamp(28px,7vw,42px);
+  animation: heroFloat 4s ease-in-out infinite;
+}
+.lily.l1{ bottom: 12vh; left: 5vw; }
+.lily.l2{ bottom: 16vh; right: 12vw; animation-delay: -2s; }
+.lily.l3{ bottom: 10vh; right: 35vw; animation-delay: -1s; }
+
+/* fishing rod */
+.rod{
+  position:absolute; top: 0; left: 50%;
+  transform: translateX(-50%);
+  z-index: 5; font-size: clamp(60px, 14vw, 95px);
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+.line{
+  position:absolute; top: clamp(70px, 14vw, 100px);
+  left: 50%; transform: translateX(-50%);
+  width: 3px; background: rgba(0,0,0,0.5);
+  height: 0; z-index: 4;
+  transition: height 0.3s ease-in, opacity 0.3s;
+}
+.line.drop{ height: 30vh; }
+.hook{
+  position:absolute; top: 100%; left: 50%;
+  transform: translate(-50%, -8px);
+  font-size: 24px; pointer-events:none;
+}
+
+/* pond water */
+.pond{
+  position:absolute; bottom: 0; left: 0; right: 0;
+  height: 55vh; overflow: hidden; z-index: 2;
+  background: linear-gradient(180deg, rgba(2,132,199,0) 0%, rgba(2,132,199,0.3) 30%, rgba(7,89,133,0.6) 100%);
+}
+.pond::before{
+  content: ''; position:absolute; top:0; left:0; right:0; height:8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0));
+  animation: waterShimmer 3s ease-in-out infinite;
+}
+@keyframes waterShimmer{ 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+.fish{
+  position:absolute; cursor:pointer;
+  width: clamp(96px, 22vw, 140px); height: clamp(60px, 14vw, 88px);
+  display:flex; align-items:center; justify-content:center;
+  transition: transform 0.15s var(--bounce);
+}
+.fish:active{ transform: scale(0.92); }
+.fish-body{
+  position:absolute; inset: 0 18% 0 0;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border-radius: 50% 30% 30% 50% / 50% 50% 50% 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3), inset -4px -6px 10px rgba(0,0,0,0.2);
+}
+.fish-tail{
+  position:absolute; right: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 30%; height: 80%;
+  background: var(--c2);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  border-right: 2px solid #fff;
+}
+.fish-eye{
+  position:absolute; top: 25%; left: 25%;
+  width: 14px; height: 14px;
+  background: #fff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.fish-eye::after{
+  content:''; width: 7px; height: 7px;
+  background: #0c4a6e; border-radius: 50%;
+}
+.fish-num{
+  position: relative; z-index: 3;
+  font-size: clamp(34px, 8vw, 50px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.5);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+  margin-left: -10px;
+}
+.fish.flip .fish-body{ transform: scaleX(-1); }
+.fish.flip .fish-tail{ left:0; right:auto; transform: translateY(-50%) scaleX(-1); }
+.fish.flip .fish-num{ margin-left: 0; margin-right: -10px; }
+.fish.flip .fish-eye{ left: auto; right: 25%; }
+
+.fish.caught{ animation: fishCatch 0.8s var(--bounce) forwards; pointer-events:none; }
+@keyframes fishCatch{
+  0%  { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.15) translateY(-30vh); }
+  100%{ transform: scale(0.2) translateY(-80vh); opacity: 0; }
+}
+.fish.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* fish colors */
+.c-orange{ --c1:#fed7aa; --c2:#f97316; }
+.c-pink{   --c1:#fbcfe8; --c2:#ec4899; }
+.c-blue{   --c1:#bfdbfe; --c2:#2563eb; }
+.c-green{  --c1:#bbf7d0; --c2:#16a34a; }
+.c-purple{ --c1:#ddd6fe; --c2:#7c3aed; }
+.c-yellow{ --c1:#fef08a; --c2:#eab308; }
+
+/* bucket */
+.bucket{
+  position:fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 6;
+  width: clamp(100px, 22vw, 150px);
+  height: clamp(72px, 16vw, 105px);
+  background: linear-gradient(180deg, #fbbf24, #d97706);
+  border: 4px solid #fff;
+  border-radius: 8px 8px 30px 30px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3), inset -6px 0 12px rgba(0,0,0,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(26px, 6.5vw, 38px); color:#fff;
+  -webkit-text-stroke: 2px #92400e;
+  font-weight: 900;
+}
+.bucket::before{
+  content:''; position:absolute; top: -10px; left: -10px; right: -10px;
+  height: 14px; background:#fbbf24; border: 4px solid #fff;
+  border-radius: 999px;
+}
+.bucket-fish{
+  position: absolute; bottom: 50%; font-size: 16px;
+  animation: bucketBob 2s ease-in-out infinite;
+}
+@keyframes bucketBob{ 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-3px) } }
+
+.celeb-big{ -webkit-text-stroke:3px #0c4a6e; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#0c4a6e; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">FISH POND</div>
+    <div class="title-hero">🎣</div>
+    <div class="title-sub">Catch the right fish · Fill the bucket!</div>
+    <button class="start-btn" id="btnStart">🎣 Cast Your Line</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Catch fish</span>
+    <span class="hud-target" id="hudTarget">5</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="sun">☀️</div>
+  <div class="rod">🎣</div>
+  <div class="line" id="line"><div class="hook">⚓</div></div>
+
+  <div class="pond" id="pond"></div>
+  <div class="lily l1">🪷</div>
+  <div class="lily l2">🪷</div>
+  <div class="lily l3">🪷</div>
+
+  <div class="bucket" id="bucket"><span id="bucketCount">0</span></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">BIG CATCH!</div>
+    <div class="title-hero">🎣</div>
+    <div class="celeb-count" id="celebCount">Bucket full!</div>
+    <button class="start-btn" id="btnAgain">🎣 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [2,3,4,5,6,7];
+const COLORS = ['c-orange','c-pink','c-blue','c-green','c-purple','c-yellow'];
+
+const ROUNDS = [
+  { prompts: 4, speed: 0.55, bidirectional: false },
+  { prompts: 4, speed: 0.8,  bidirectional: false },
+  { prompts: 4, speed: 1.0,  bidirectional: true },
+  { prompts: 4, speed: 1.3,  bidirectional: true }
+];
+
+let roundIdx = 0, promptIdx = 0, caught = 0;
+let currentTarget = null;
+let promptList = [];
+let activeFish = [];
+let spawnTimer = null;
+let hintTimer = null;
+
+function spawnFish(value, color){
+  const r = ROUNDS[roundIdx];
+  const pond = $('pond');
+  const f = document.createElement('div');
+  f.className = 'fish ' + color;
+  f.dataset.n = value;
+  f.innerHTML = `
+    <div class="fish-body"></div>
+    <div class="fish-tail"></div>
+    <div class="fish-eye"></div>
+    <div class="fish-num">${value}</div>`;
+  const w = innerWidth;
+  const fishW = Math.min(140, Math.max(96, w*0.22));
+  const pondH = pond.clientHeight || (innerHeight*0.55);
+  const top = 20 + Math.random()*(pondH - 100);
+  let startX, endX;
+  const flip = r.bidirectional && Math.random() < 0.5;
+  if(flip){
+    startX = w + 20; endX = -fishW - 20;
+    f.classList.add('flip');
+  } else {
+    startX = -fishW - 20; endX = w + 20;
+  }
+  f.style.left = startX + 'px';
+  f.style.top = top + 'px';
+  pond.appendChild(f);
+  const dist = Math.abs(endX - startX);
+  const duration = (dist / (r.speed * 70)) * 1000;
+  const anim = f.animate(
+    [{ transform: `translateX(0)` }, { transform: `translateX(${endX - startX}px)` }],
+    { duration, easing: 'linear', fill: 'forwards' }
+  );
+  const entry = { el: f, anim };
+  activeFish.push(entry);
+  onTap(f, () => handleFishTap(f, value));
+  anim.onfinish = () => {
+    const i = activeFish.indexOf(entry); if(i >= 0) activeFish.splice(i, 1);
+    f.remove();
+  };
+}
+
+function handleFishTap(el, n){
+  if(el.classList.contains('caught')) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    // drop line + reel up
+    const ln = $('line'); ln.classList.add('drop');
+    setTimeout(() => ln.classList.remove('drop'), 700);
+    el.classList.add('caught');
+    audio.tone('ding');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 14);
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    caught++;
+    $('bucketCount').textContent = caught;
+    promptIdx++;
+    setTimeout(nextPrompt, 1100);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function keepPondFull(){
+  // Keep ~5-6 fish in the pond at once, ensure the target appears with 40% bias
+  const desired = 6;
+  while(activeFish.length < desired){
+    let val;
+    if(Math.random() < 0.4){ val = currentTarget; }
+    else {
+      do { val = pick(NUMS); } while(val === currentTarget && Math.random() < 0.5);
+    }
+    spawnFish(val, pick(COLORS));
+  }
+}
+
+function clearPond(){
+  activeFish.forEach(f => { try { f.anim.cancel(); } catch(e){} f.el.remove(); });
+  activeFish = [];
+  $('pond').innerHTML = '';
+}
+
+function nextPrompt(){
+  const r = ROUNDS[roundIdx];
+  if(promptIdx >= r.prompts){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('which_number');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    activeFish.forEach(f => {
+      if(Number(f.el.dataset.n) === currentTarget){
+        f.el.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.5) drop-shadow(0 0 14px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  const r = ROUNDS[roundIdx];
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, r.prompts);
+  clearPond();
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(() => {
+    // start spawn loop
+    if(spawnTimer) clearInterval(spawnTimer);
+    keepPondFull();
+    spawnTimer = setInterval(() => {
+      if(!$('scrGame').classList.contains('active')){ clearInterval(spawnTimer); return; }
+      keepPondFull();
+    }, 700);
+    nextPrompt();
+  }, 1100);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= ROUNDS.length){
+    if(spawnTimer){ clearInterval(spawnTimer); spawnTimer = null; }
+    clearPond();
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${caught} fish in the bucket!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; caught = 0;
+  $('bucketCount').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

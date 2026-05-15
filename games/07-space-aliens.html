@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#4338ca">
+<title>Space Aliens · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: radial-gradient(ellipse at 30% 20%, #312e81 0%, #1e1b4b 40%, #0f172a 80%);
+  color: #fff;
+}
+.back-home-btn{ color:#1e1b4b; border-color:#a5b4fc; }
+.home-bubble{ border-color:#a5b4fc; }
+.start-btn{ background: linear-gradient(180deg, #818cf8, #4f46e5); color:#fff;
+  box-shadow: 0 6px 0 #312e81, 0 10px 20px rgba(0,0,0,0.4); }
+@keyframes glow{
+  0%,100%{ box-shadow: 0 6px 0 #312e81, 0 10px 20px rgba(0,0,0,0.4), 0 0 22px rgba(129,140,248,0.7); }
+  50%   { box-shadow: 0 6px 0 #312e81, 0 10px 20px rgba(0,0,0,0.4), 0 0 50px rgba(129,140,248,1); }
+}
+
+.star-bg{ position: absolute; color: #fff; pointer-events: none;
+  animation: twinkle var(--dur,2s) ease-in-out infinite var(--delay,0s); }
+@keyframes twinkle{ 0%,100%{ opacity:0.25 } 50%{ opacity:1 } }
+
+.nebula{
+  position:absolute; pointer-events:none; opacity:0.3;
+  font-size: clamp(100px, 25vw, 200px);
+  animation: heroFloat 6s ease-in-out infinite;
+}
+.nebula.n1{ top: 10vh; left: -5vw; filter: drop-shadow(0 0 30px #a78bfa); }
+.nebula.n2{ top: 25vh; right: -10vw; animation-delay: -3s; filter: drop-shadow(0 0 30px #f472b6); }
+
+/* play area for alien UFOs */
+.space-area{ position:absolute; top: 12vh; left: 0; right: 0; bottom: 22vh; z-index: 3; overflow: hidden; }
+
+.alien{
+  position: absolute;
+  width: clamp(100px, 22vw, 140px); height: clamp(70px, 16vw, 100px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.alien:active{ transform: scale(0.92); }
+
+.ufo-dome{
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 60%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), var(--c1) 50%, var(--c2) 100%);
+  border-radius: 50% 50% 30% 30% / 70% 70% 30% 30%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 18px rgba(165,180,252,0.6);
+}
+.ufo-base{
+  position: absolute; bottom: 5%; left: -2%; right: -2%;
+  height: 40%;
+  background: linear-gradient(180deg, #cbd5e1 0%, #64748b 60%, #334155 100%);
+  border: 3px solid #1e293b;
+  border-radius: 50%;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+}
+.ufo-base::before, .ufo-base::after{
+  content:''; position:absolute; top: 50%; transform: translateY(-50%);
+  width: 8px; height: 8px; background: #fde047; border-radius: 50%;
+  box-shadow: 0 0 10px #fde047;
+  animation: ufoBlink 1s ease-in-out infinite;
+}
+.ufo-base::before{ left: 20%; }
+.ufo-base::after { right: 20%; animation-delay: -0.5s; }
+@keyframes ufoBlink{ 0%,100%{ opacity:1 } 50%{ opacity:0.3 } }
+.alien-num{
+  position: relative; z-index: 3;
+  font-size: clamp(28px, 6.5vw, 42px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.4);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  font-weight: 900;
+  margin-top: -6%;
+}
+
+/* alien color schemes */
+.a1{ --c1:#a78bfa; --c2:#7c3aed; }
+.a2{ --c1:#86efac; --c2:#16a34a; }
+.a3{ --c1:#fbcfe8; --c2:#db2777; }
+.a4{ --c1:#fed7aa; --c2:#ea580c; }
+.a5{ --c1:#bfdbfe; --c2:#2563eb; }
+.a6{ --c1:#fde047; --c2:#d97706; }
+
+.alien.beamed{ animation: alienBeam 0.9s var(--bounce) forwards; pointer-events:none; }
+@keyframes alienBeam{
+  0%   { transform: scale(1); opacity: 1; }
+  40%  { transform: scale(1.15); }
+  100% { transform: scale(0.2) translateY(50vh); opacity: 0; }
+}
+.alien.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* tractor beam from spaceship */
+.spaceship{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 6;
+  font-size: clamp(60px, 15vw, 100px);
+  filter: drop-shadow(0 4px 12px rgba(129,140,248,0.6));
+}
+.tractor-beam{
+  position: fixed; bottom: 14vh; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  background: linear-gradient(180deg, rgba(165,180,252,0) 0%, rgba(165,180,252,0.7) 50%, rgba(165,180,252,0.9) 100%);
+  clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  z-index: 4; pointer-events: none;
+  transition: opacity 0.3s;
+  opacity: 0;
+}
+.tractor-beam.fire{
+  width: clamp(80px, 18vw, 120px);
+  height: 60vh; opacity: 1;
+  animation: beamPulse 0.7s ease-out forwards;
+}
+@keyframes beamPulse{
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.alien-counter{
+  position: fixed; bottom: 1.5vh; right: 14px;
+  z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 4px solid #4338ca; border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 16px; font-weight: 900; color:#1e1b4b;
+  display: flex; align-items: center; gap: 6px;
+}
+.alien-counter-num{ font-size: 22px; -webkit-text-stroke: 1.5px #fff; color:#7c3aed; }
+
+.celeb-big{ -webkit-text-stroke:3px #a5b4fc; text-shadow:4px 6px 0 #4338ca; }
+.celeb-count{ color:#a5b4fc; text-shadow:2px 2px 0 #1e1b4b; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">SPACE ALIENS</div>
+    <div class="title-hero">🛸</div>
+    <div class="title-sub">Beam up the right alien!</div>
+    <button class="start-btn" id="btnStart">🛸 Start Mission</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Beam alien</span>
+    <span class="hud-target" id="hudTarget">9</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="nebula n1">🌌</div>
+  <div class="nebula n2">🌌</div>
+
+  <div class="space-area" id="spaceArea"></div>
+  <div class="tractor-beam" id="beam"></div>
+  <div class="spaceship">🛸</div>
+
+  <div class="alien-counter">
+    👽 <span class="alien-counter-num" id="alienCount">0</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">MISSION ACCOMPLISHED</div>
+    <div class="title-hero">🛸</div>
+    <div class="celeb-count" id="celebCount">All aliens aboard!</div>
+    <button class="start-btn" id="btnAgain">🛸 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [6,7,8,9,10,11];
+const ALIEN_COLORS = ['a1','a2','a3','a4','a5','a6'];
+
+const ROUNDS = [
+  { prompts: 4, drift: 'gentle' },
+  { prompts: 4, drift: 'medium' },
+  { prompts: 4, drift: 'wide' },
+  { prompts: 4, drift: 'wide' }
+];
+
+let roundIdx = 0, promptIdx = 0, beamed = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let alienEls = [];
+
+function spawnAliens(){
+  const area = $('spaceArea');
+  area.innerHTML = '';
+  alienEls = [];
+  const w = area.clientWidth || innerWidth;
+  const h = area.clientHeight || (innerHeight*0.6);
+  const positions = grid6(w, h);
+  const colors = shuffle(ALIEN_COLORS);
+  shuffle(NUMS).forEach((n, i) => {
+    const a = document.createElement('div');
+    a.className = 'alien';
+    a.dataset.n = n;
+    a.innerHTML = `
+      <div class="ufo-dome ${colors[i % colors.length]}"></div>
+      <div class="ufo-base"></div>
+      <div class="alien-num">${n}</div>`;
+    a.style.left = positions[i].x + 'px';
+    a.style.top = positions[i].y + 'px';
+    area.appendChild(a);
+    onTap(a, () => handleAlienTap(a, n));
+    alienEls.push(a);
+    floatAlien(a, ROUNDS[roundIdx]);
+  });
+}
+
+function grid6(w, h){
+  // 2 rows x 3 cols, jittered
+  const cols = 3, rows = 2;
+  const cellW = w / cols, cellH = h / rows;
+  const items = [];
+  for(let r = 0; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      items.push({
+        x: cellW * c + cellW*0.5 - 65 + (Math.random()-0.5)*cellW*0.35,
+        y: cellH * r + cellH*0.5 - 50 + (Math.random()-0.5)*cellH*0.35
+      });
+    }
+  }
+  return items;
+}
+
+function floatAlien(el, r){
+  const dx = ({gentle: 20, medium: 50, wide: 90})[r.drift] || 30;
+  const dy = ({gentle: 15, medium: 35, wide: 60})[r.drift] || 20;
+  const dur = 3000 + Math.random()*1500;
+  el.animate(
+    [
+      { transform: `translate(0,0) rotate(0)` },
+      { transform: `translate(${dx}px, ${-dy}px) rotate(4deg)` },
+      { transform: `translate(${-dx}px, ${dy}px) rotate(-4deg)` },
+      { transform: `translate(0,0) rotate(0)` }
+    ],
+    { duration: dur, iterations: Infinity, easing: 'ease-in-out' }
+  );
+}
+
+function handleAlienTap(el, n){
+  if(el.classList.contains('beamed')) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    const beam = $('beam');
+    beam.classList.remove('fire'); void beam.offsetWidth;
+    beam.classList.add('fire');
+    setTimeout(() => beam.classList.remove('fire'), 700);
+    el.classList.add('beamed');
+    audio.tone('sparkle');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 14);
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    beamed++;
+    $('alienCount').textContent = beamed;
+    promptIdx++;
+    setTimeout(nextPrompt, 1100);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function nextPrompt(){
+  const r = ROUNDS[roundIdx];
+  if(promptIdx >= r.prompts){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnAliens();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    alienEls.forEach(a => {
+      if(Number(a.dataset.n) === currentTarget && !a.classList.contains('beamed')){
+        a.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.6) drop-shadow(0 0 20px #a5b4fc)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, ROUNDS[roundIdx].prompts);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= ROUNDS.length){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${beamed} aliens aboard!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; beamed = 0;
+  $('alienCount').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// starfield
+(function(){
+  for(let i = 0; i < 50; i++){
+    const s = document.createElement('div');
+    s.className = 'star-bg';
+    s.textContent = '✦';
+    s.style.top = Math.random()*100 + 'vh';
+    s.style.left = Math.random()*100 + 'vw';
+    s.style.fontSize = (6 + Math.random()*14) + 'px';
+    s.style.setProperty('--dur', (1 + Math.random()*3) + 's');
+    s.style.setProperty('--delay', (-Math.random()*3) + 's');
+    document.body.appendChild(s);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

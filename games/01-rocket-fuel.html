@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e293b">
+<title>Rocket Fuel · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 40%, #312e81 75%, #6d28d9 100%);
+  color: #fff;
+}
+.back-home-btn{ color:#1e293b; border-color:#fbbf24; }
+.home-bubble{ border-color:#fbbf24; }
+.start-btn{ background: linear-gradient(180deg, #fbbf24, #f59e0b); color:#1e293b;
+  box-shadow: 0 6px 0 #b45309, 0 10px 20px rgba(0,0,0,0.4); }
+@keyframes glow{
+  0%,100%{ box-shadow: 0 6px 0 #b45309, 0 10px 20px rgba(0,0,0,0.4), 0 0 20px rgba(251,191,36,0.6); }
+  50%   { box-shadow: 0 6px 0 #b45309, 0 10px 20px rgba(0,0,0,0.4), 0 0 50px rgba(251,191,36,1); }
+}
+
+/* ═══ stars ═══ */
+.star-bg{ position:absolute; color:#fff; pointer-events:none; opacity:0.7;
+  animation: twinkle var(--dur,2s) ease-in-out infinite var(--delay,0s); }
+@keyframes twinkle{ 0%,100%{ opacity:0.3 } 50%{ opacity:0.95 } }
+
+/* ═══ launchpad + tanks ═══ */
+.launchpad{ position:absolute; bottom:0; left:0; right:0; height:46vh;
+  display:flex; align-items:flex-end; justify-content:center; gap:clamp(8px,2.5vw,16px);
+  padding:0 12px 60px; }
+.tank{
+  position:relative; width:clamp(50px,13vw,80px); height:clamp(150px,32vh,220px);
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  border:4px solid #fbbf24; border-radius:18px 18px 8px 8px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  padding-top:10px; cursor:pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 0 12px rgba(0,0,0,0.5);
+  transition: transform 0.15s var(--bounce);
+  overflow:hidden;
+}
+.tank:active{ transform: scale(0.94); }
+.tank .digit{
+  font-size: clamp(34px,8vw,56px); color:#fbbf24;
+  -webkit-text-stroke: 2px #1e293b;
+  text-shadow: 2px 3px 0 rgba(0,0,0,0.5);
+  z-index: 2; position:relative;
+}
+.tank-fuel{
+  position:absolute; left:4px; right:4px; bottom:0; height:0;
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 60%, #dc2626 100%);
+  border-radius:0 0 4px 4px;
+  transition: height 0.5s var(--bounce);
+  box-shadow: inset 0 4px 12px rgba(255,255,255,0.3);
+  z-index: 1;
+}
+.tank.filled .tank-fuel{ height: calc(100% - 14px); }
+.tank.filled{ animation: tankFilled 0.6s var(--bounce); }
+@keyframes tankFilled{ 0%{transform:scale(1)} 30%{transform:scale(1.08)} 100%{transform:scale(1)} }
+.tank-cap{
+  position:absolute; bottom:-6px; left:50%; transform:translateX(-50%);
+  width:80%; height:8px; background:#1e293b; border-radius:0 0 8px 8px;
+}
+
+/* The rocket sits on top of the launchpad area */
+.rocket-wrap{
+  position:absolute; left:50%; transform:translateX(-50%);
+  bottom: calc(46vh + 20px); z-index: 5;
+  font-size: clamp(70px,16vw,110px);
+  filter: drop-shadow(0 6px 14px rgba(251,191,36,0.5));
+  transition: bottom 1.2s cubic-bezier(0.5, -0.2, 1, 1), transform 0.4s;
+}
+.rocket-wrap.launching{ bottom: 130vh; transform: translateX(-50%) scale(1.4); }
+.rocket-wrap .flames{
+  position:absolute; left:50%; bottom:-30px;
+  transform:translateX(-50%);
+  font-size: clamp(40px, 10vw, 64px);
+  opacity:0; transition: opacity 0.2s;
+}
+.rocket-wrap.launching .flames{ opacity:1; animation: flamesPulse 0.2s ease-in-out infinite; }
+@keyframes flamesPulse{ 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) scale(1.3)} }
+
+/* countdown overlay */
+.countdown{
+  position:fixed; inset:0; z-index:400;
+  display:none; align-items:center; justify-content:center;
+  background: rgba(15,23,42,0.7); backdrop-filter: blur(4px);
+}
+.countdown.active{ display:flex; }
+.countdown-num{
+  font-size: clamp(150px, 38vw, 280px); color:#fbbf24;
+  -webkit-text-stroke: 6px #1e293b;
+  text-shadow: 6px 8px 0 #dc2626, 0 0 60px rgba(251,191,36,0.6);
+  animation: countPop 1s var(--bounce);
+}
+@keyframes countPop{ 0%{transform:scale(0) rotate(-30deg)} 70%{transform:scale(1.15) rotate(8deg)} 100%{transform:scale(1) rotate(0)} }
+
+.celeb-big{ -webkit-text-stroke:3px #fbbf24; text-shadow:4px 6px 0 #dc2626; }
+.celeb-count{ color:#fbbf24; text-shadow:2px 2px 0 #1e293b; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<!-- TITLE -->
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">ROCKET FUEL</div>
+    <div class="title-hero">🚀</div>
+    <div class="title-sub">Fill the tanks · Blast off!</div>
+    <button class="start-btn" id="btnStart">🚀 Start Mission</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Fill tank</span>
+    <span class="hud-target" id="hudTarget">3</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="rocket-wrap" id="rocket">🚀<span class="flames">🔥🔥</span></div>
+  <div class="launchpad" id="launchpad"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="scrCountdown" class="countdown">
+  <div class="countdown-num" id="countdownNum">3</div>
+</div>
+
+<!-- CELEB -->
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">BLAST OFF!</div>
+    <div class="title-hero">🚀</div>
+    <div class="celeb-count" id="celebCount">Mission complete!</div>
+    <button class="start-btn" id="btnAgain">🚀 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [0,1,2,3,4,5];
+
+// 4 rounds — same pool 0-5; each round = 4 prompts (16 correct fuel-ups total).
+// Round 1: tanks in order; Round 2-3: tanks shuffled each prompt; Round 4: shuffled + must clear all 6.
+const ROUNDS = [
+  { prompts: 4, shuffle: false },
+  { prompts: 4, shuffle: true  },
+  { prompts: 4, shuffle: true  },
+  { prompts: 6, shuffle: true  }  // round 4 fills all 6
+];
+
+let roundIdx = 0, promptIdx = 0, totalFilled = 0;
+let currentTarget = null;
+let tankNumbers = NUMS.slice();
+let promptList = [];
+let hintTimer = null;
+
+function buildTanks(){
+  const pad = $('launchpad');
+  pad.innerHTML = '';
+  tankNumbers.forEach(n => {
+    const t = document.createElement('div');
+    t.className = 'tank'; t.dataset.n = n;
+    t.innerHTML = `<div class="digit">${n}</div><div class="tank-fuel"></div><div class="tank-cap"></div>`;
+    onTap(t, () => handleTankTap(t, n));
+    pad.appendChild(t);
+  });
+}
+
+function handleTankTap(el, n){
+  if(el.classList.contains('filled')) return;  // already filled
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    el.classList.add('filled');
+    audio.tone('correct');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 18);
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    totalFilled++;
+    promptIdx++;
+    setTimeout(nextPrompt, 1100);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('tap_the_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function nextPrompt(){
+  const r = ROUNDS[roundIdx];
+  if(promptIdx >= r.prompts){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  // shuffle tanks if needed
+  if(r.shuffle){
+    tankNumbers = shuffle(NUMS);
+    // remember which are filled by number, rebuild
+    const filledSet = new Set(
+      [...document.querySelectorAll('.tank.filled')].map(t => Number(t.dataset.n))
+    );
+    buildTanks();
+    document.querySelectorAll('.tank').forEach(t => {
+      if(filledSet.has(Number(t.dataset.n))) t.classList.add('filled');
+    });
+  }
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('tap_the_number');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    document.querySelectorAll('.tank').forEach(t => {
+      if(Number(t.dataset.n) === currentTarget && !t.classList.contains('filled')){
+        t.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.5) drop-shadow(0 0 18px #fbbf24)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  const r = ROUNDS[roundIdx];
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  // Choose prompt list — random unique numbers from the pool for this round
+  promptList = shuffle(NUMS).slice(0, r.prompts);
+  // If round 4 (6 prompts) — clear all tank fills so we fill all again
+  if(r.prompts >= NUMS.length){
+    tankNumbers = NUMS.slice();
+    buildTanks();
+  } else {
+    // Each new round starts with tanks empty for a fresh "fill" feeling
+    tankNumbers = r.shuffle ? shuffle(NUMS) : NUMS.slice();
+    buildTanks();
+  }
+  showBanner('Round ' + (roundIdx+1), r.prompts >= NUMS.length ? 'Fill them all!' : null);
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= ROUNDS.length){
+    setTimeout(launchSequence, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function launchSequence(){
+  // 5-4-3-2-1 BLAST OFF
+  $('scrCountdown').classList.add('active');
+  let n = 5;
+  const step = () => {
+    if(n <= 0){
+      $('scrCountdown').classList.remove('active');
+      $('rocket').classList.add('launching');
+      audio.tone('blast');
+      setTimeout(() => {
+        for(let i = 0; i < 4; i++){
+          burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 30);
+        }
+      }, 200);
+      setTimeout(showCeleb, 1700);
+      return;
+    }
+    const el = $('countdownNum');
+    el.textContent = n;
+    el.style.animation = 'none'; void el.offsetWidth;
+    el.style.animation = 'countPop 0.85s var(--bounce)';
+    audio.clearQueue();
+    audio.speakNumber(n);
+    audio.tone('ding');
+    n--;
+    setTimeout(step, 900);
+  };
+  step();
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${totalFilled} tanks fuelled!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; totalFilled = 0;
+  $('rocket').classList.remove('launching');
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// ═══ background stars ═══
+(function(){
+  const star = '✦';
+  for(let i = 0; i < 40; i++){
+    const s = document.createElement('div');
+    s.className = 'star-bg'; s.textContent = star;
+    s.style.top = (Math.random()*60) + 'vh';
+    s.style.left = (Math.random()*100) + 'vw';
+    s.style.fontSize = (8 + Math.random()*16) + 'px';
+    s.style.setProperty('--dur', (1 + Math.random()*3) + 's');
+    s.style.setProperty('--delay', (-Math.random()*3) + 's');
+    document.body.appendChild(s);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

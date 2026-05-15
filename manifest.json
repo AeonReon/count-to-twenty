@@ -1,0 +1,15 @@
+{
+  "name": "Count to Twenty · aha!",
+  "short_name": "Count 20",
+  "description": "Ten fun games — learn numbers 0 to 20 one at a time.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fde68a",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

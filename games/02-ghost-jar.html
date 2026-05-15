@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#312e81">
+<title>Ghost Jar · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #312e81 0%, #4c1d95 40%, #7c3aed 75%, #a78bfa 100%);
+  color: #fff;
+}
+.back-home-btn{ color:#312e81; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.moon{
+  position:absolute; top:11vh; right:14vw;
+  font-size: clamp(60px, 14vw, 100px);
+  filter: drop-shadow(0 0 30px #fde047);
+  animation: moonGlow 3s ease-in-out infinite;
+}
+@keyframes moonGlow{ 0%,100%{filter:drop-shadow(0 0 25px #fde047)} 50%{filter:drop-shadow(0 0 50px #fde047)} }
+
+.castle-silhouette{
+  position:absolute; bottom:0; left:0; right:0;
+  height: 22vh; pointer-events:none; z-index:1;
+  background: linear-gradient(180deg, transparent 0%, #1e1b4b 80%);
+  font-size: clamp(40px, 11vw, 90px);
+  display:flex; align-items:flex-end; justify-content:space-around;
+  opacity: 0.7;
+}
+
+/* Glowing jar at bottom */
+.jar{
+  position:fixed; bottom: 12vh; left:50%; transform:translateX(-50%);
+  z-index: 4;
+  width: clamp(120px, 26vw, 180px); height: clamp(140px, 30vw, 200px);
+  background: linear-gradient(180deg, rgba(253,224,71,0.35) 0%, rgba(253,224,71,0.7) 100%);
+  border: 5px solid #fde047;
+  border-radius: 20px 20px 30px 30px;
+  display:flex; align-items:flex-end; justify-content:center;
+  padding-bottom: 10px;
+  box-shadow: 0 0 30px rgba(253,224,71,0.5), inset 0 -10px 20px rgba(253,224,71,0.5);
+  overflow: hidden;
+}
+.jar::before{
+  content:''; position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+  width: 65%; height: 12px;
+  background:#fde047; border-radius: 6px 6px 0 0;
+  box-shadow: 0 0 20px rgba(253,224,71,0.8);
+}
+.jar-count{
+  font-size: clamp(28px, 7vw, 44px); color:#312e81;
+  font-weight: 900; -webkit-text-stroke: 1.5px #fff;
+  text-shadow: 2px 2px 0 rgba(255,255,255,0.6);
+}
+
+/* Captured ghost mini icons floating inside jar */
+.jar-ghost{ position:absolute; font-size: clamp(20px, 4.5vw, 30px);
+  opacity:0.9; animation: jarFloat 2.5s ease-in-out infinite; }
+@keyframes jarFloat{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+/* Floating ghosts */
+.ghost-area{ position:absolute; top:14vh; left:0; right:0; bottom:32vh; z-index:3; }
+.ghost{
+  position: absolute; cursor: pointer; touch-action: manipulation;
+  width: clamp(78px, 17vw, 112px); height: clamp(96px, 21vw, 138px);
+  display:flex; align-items:flex-start; justify-content:center;
+  transition: transform 0.15s var(--bounce);
+}
+.ghost:active{ transform: scale(0.92); }
+
+.ghost-body{
+  position:absolute; inset:0;
+  background: radial-gradient(circle at 35% 30%, #fff, #e9d5ff);
+  border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+  box-shadow: 0 0 18px rgba(255,255,255,0.6), inset -8px -10px 18px rgba(167,139,250,0.3);
+  -webkit-mask-image: radial-gradient(closest-side at 50% 75%, transparent 8%, black 12%),
+                      radial-gradient(closest-side at 18% 95%, transparent 14%, black 18%),
+                      radial-gradient(closest-side at 50% 95%, transparent 14%, black 18%),
+                      radial-gradient(closest-side at 82% 95%, transparent 14%, black 18%),
+                      linear-gradient(black,black);
+  -webkit-mask-composite: source-over;
+}
+.ghost-eyes{
+  position:absolute; top: 32%; left:50%; transform:translateX(-50%);
+  display:flex; gap:14px; z-index:3;
+}
+.ghost-eye{ width:9px; height:13px; background:#312e81; border-radius:50%; }
+.ghost-num{
+  position:absolute; bottom:18%; left:50%; transform:translateX(-50%);
+  font-size: clamp(34px, 8vw, 50px); color:#7c3aed;
+  -webkit-text-stroke: 1.5px #fff;
+  font-weight:900; line-height:1; text-shadow:2px 2px 0 rgba(255,255,255,0.7);
+  z-index:3;
+}
+
+.ghost.caught{ animation: ghostSuck 0.7s var(--bounce) forwards; pointer-events:none; }
+@keyframes ghostSuck{
+  0%  { transform: scale(1) translateY(0); opacity:1; }
+  40% { transform: scale(1.2); }
+  100%{ transform: scale(0.05) translateY(120vh); opacity:0; }
+}
+
+.ghost.wobble{ animation: wobble 0.5s ease-in-out; }
+
+.celeb-big{ -webkit-text-stroke:3px #fde047; text-shadow:4px 6px 0 #7c3aed; }
+.celeb-count{ color:#fde047; text-shadow:2px 2px 0 #312e81; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">GHOST JAR</div>
+    <div class="title-hero">👻</div>
+    <div class="title-sub">Catch the right ghost · Fill the jar!</div>
+    <button class="start-btn" id="btnStart">👻 Start Catching</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Catch ghost</span>
+    <span class="hud-target" id="hudTarget">4</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="moon">🌕</div>
+  <div class="castle-silhouette">🏰🏰🏰</div>
+
+  <div class="ghost-area" id="ghostArea"></div>
+
+  <div class="jar" id="jar">
+    <span class="jar-count" id="jarCount">0</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">JAR IS FULL!</div>
+    <div class="title-hero">👻</div>
+    <div class="celeb-count" id="celebCount">You caught them all!</div>
+    <button class="start-btn" id="btnAgain">👻 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [1,2,3,4,5,6];
+
+const ROUNDS = [
+  { prompts: 4, speed: 0.5,  drift: 'gentle' },
+  { prompts: 4, speed: 0.8,  drift: 'medium' },
+  { prompts: 4, speed: 1.1,  drift: 'medium' },
+  { prompts: 4, speed: 1.4,  drift: 'wide'   }
+];
+
+let roundIdx = 0, promptIdx = 0, caught = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let ghostEls = [];
+
+function spawnGhosts(){
+  const area = $('ghostArea');
+  area.innerHTML = '';
+  ghostEls = [];
+  const w = area.clientWidth || innerWidth;
+  const h = area.clientHeight || (innerHeight * 0.55);
+  const positions = computePositions(NUMS.length, w, h);
+  shuffle(NUMS).forEach((n, i) => {
+    const g = document.createElement('div');
+    g.className = 'ghost';
+    g.dataset.n = n;
+    g.innerHTML = `
+      <div class="ghost-body"></div>
+      <div class="ghost-eyes"><div class="ghost-eye"></div><div class="ghost-eye"></div></div>
+      <div class="ghost-num">${n}</div>`;
+    g.style.left = positions[i].x + 'px';
+    g.style.top  = positions[i].y + 'px';
+    onTap(g, () => handleGhostTap(g, n));
+    area.appendChild(g);
+    ghostEls.push(g);
+    floatGhost(g, ROUNDS[roundIdx]);
+  });
+}
+
+function computePositions(count, w, h){
+  // 2 rows of 3
+  const cols = 3, rows = 2;
+  const cellW = w / cols, cellH = h / rows;
+  const items = [];
+  for(let r = 0; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      items.push({
+        x: cellW * c + cellW*0.5 - 50 + (Math.random()-0.5)*cellW*0.3,
+        y: cellH * r + cellH*0.5 - 60 + (Math.random()-0.5)*cellH*0.25
+      });
+    }
+  }
+  return items;
+}
+
+function floatGhost(el, r){
+  const dx = ({gentle: 20, medium: 50, wide: 90})[r.drift] || 30;
+  const dy = ({gentle: 15, medium: 35, wide: 60})[r.drift] || 20;
+  const dur = (3500 / r.speed) + Math.random()*1500;
+  el.animate(
+    [
+      { transform: `translate(0,0)` },
+      { transform: `translate(${dx}px, ${-dy}px)` },
+      { transform: `translate(${-dx}px, ${dy}px)` },
+      { transform: `translate(0,0)` }
+    ],
+    { duration: dur, iterations: Infinity, easing: 'ease-in-out' }
+  );
+}
+
+function handleGhostTap(el, n){
+  if(el.classList.contains('caught')) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    el.classList.add('caught');
+    audio.tone('gulp');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 14);
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    caught++;
+    addGhostToJar(n);
+    $('jarCount').textContent = caught;
+    promptIdx++;
+    setTimeout(nextPrompt, 1000);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('can_you_find');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function addGhostToJar(n){
+  const jar = $('jar');
+  const mini = document.createElement('div');
+  mini.className = 'jar-ghost';
+  mini.textContent = '👻';
+  // random position inside jar
+  mini.style.left = (15 + Math.random()*60) + '%';
+  mini.style.bottom = (10 + Math.random()*55) + '%';
+  mini.style.animationDelay = (-Math.random()*2) + 's';
+  jar.appendChild(mini);
+}
+
+function nextPrompt(){
+  const r = ROUNDS[roundIdx];
+  if(promptIdx >= r.prompts){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  // any caught ghost stays gone — respawn the row each prompt for fresh chase
+  spawnGhosts();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    ghostEls.forEach(g => {
+      if(Number(g.dataset.n) === currentTarget && !g.classList.contains('caught')){
+        g.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.5) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  const r = ROUNDS[roundIdx];
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, r.prompts);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= ROUNDS.length){
+    setTimeout(showCeleb, 1300);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${caught} ghosts in the jar!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; caught = 0;
+  $('jarCount').textContent = '0';
+  document.querySelectorAll('.jar-ghost').forEach(g => g.remove());
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

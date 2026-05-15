@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#db2777">
+<title>Princess Cupcakes · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 35%, #f9a8d4 70%, #f472b6 100%);
+  color: #831843;
+}
+.back-home-btn{ color:#831843; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.castle{
+  position:absolute; top: 14vh; right: 6vw;
+  font-size: clamp(50px, 12vw, 80px);
+  opacity: 0.55; pointer-events:none;
+}
+.heart{
+  position:absolute; pointer-events:none; opacity:0.6;
+  font-size: clamp(14px, 3vw, 22px);
+  animation: heartFloat var(--dur,5s) ease-in-out infinite var(--delay,0s);
+}
+@keyframes heartFloat{
+  0%,100%{ transform:translateY(0) rotate(-6deg); opacity:0.4 }
+  50%   { transform:translateY(-18px) rotate(6deg); opacity:0.8 }
+}
+
+/* princess */
+.princess{
+  position:absolute; top: 14vh; left: 6vw;
+  font-size: clamp(80px, 18vw, 130px);
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25));
+  animation: princessWave 2.4s ease-in-out infinite;
+  z-index: 5;
+}
+@keyframes princessWave{
+  0%,100%{ transform: rotate(-3deg) translateY(0); }
+  50%   { transform: rotate(3deg) translateY(-8px); }
+}
+.princess.eats{ animation: princessEats 0.7s var(--bounce); }
+@keyframes princessEats{
+  0%   { transform: scale(1) rotate(0); }
+  30%  { transform: scale(1.18) rotate(-5deg); }
+  60%  { transform: scale(1.08) rotate(5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+/* tea table — a row of 6 cupcake plates */
+.tea-table{
+  position:absolute; bottom: 14vh; left: 0; right: 0;
+  display:flex; align-items:flex-end; justify-content:center;
+  gap: clamp(6px, 1.8vw, 14px); flex-wrap: wrap;
+  padding: 0 12px;
+}
+.plate{
+  position: relative;
+  width: clamp(70px, 16vw, 110px);
+  height: clamp(85px, 19vw, 130px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  transition: transform 0.15s var(--bounce);
+}
+.plate:active{ transform: scale(0.93); }
+.plate::after{
+  content: ''; position:absolute; bottom: 0;
+  width: 110%; height: 14px;
+  background: linear-gradient(180deg, #f3f4f6, #d1d5db);
+  border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  left: -5%;
+}
+
+.cupcake{
+  position: relative;
+  width: clamp(60px, 14vw, 95px);
+  height: clamp(78px, 17vw, 120px);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+/* cupcake liner */
+.cupcake-liner{
+  position:absolute; bottom: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+  border-radius: 4px 4px 12px 12px;
+  box-shadow: inset -6px -8px 14px rgba(0,0,0,0.2);
+}
+/* swirly frosting */
+.cupcake-frost{
+  position:absolute; top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 95%; height: 65%;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--c-frost));
+  border-radius: 50% 50% 35% 35% / 60% 60% 35% 35%;
+  box-shadow: inset -6px -6px 14px rgba(0,0,0,0.15);
+}
+.cupcake-cherry{
+  position: absolute; top: -8px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+}
+.cupcake-num{
+  position: relative; z-index: 3;
+  font-size: clamp(30px, 7vw, 46px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.4);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  font-weight: 900;
+  margin-bottom: 18%;
+}
+
+/* cupcake palette */
+.cc1{ --c1:#fde2e7; --c2:#f472b6; --c-frost:#fbcfe8; }
+.cc2{ --c1:#e0e7ff; --c2:#818cf8; --c-frost:#c7d2fe; }
+.cc3{ --c1:#fef3c7; --c2:#fbbf24; --c-frost:#fde68a; }
+.cc4{ --c1:#dcfce7; --c2:#4ade80; --c-frost:#bbf7d0; }
+.cc5{ --c1:#fee2e2; --c2:#f87171; --c-frost:#fecaca; }
+.cc6{ --c1:#e9d5ff; --c2:#a855f7; --c-frost:#ddd6fe; }
+
+.plate.eaten{ animation: plateEaten 0.7s var(--bounce) forwards; pointer-events:none; }
+@keyframes plateEaten{
+  0%  { transform: scale(1); }
+  30% { transform: scale(1.2) translateY(-20px); }
+  100%{ transform: scale(0.05) translateY(-30vh) rotate(20deg); opacity:0; }
+}
+.plate.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* tray that the princess accumulates */
+.tray{
+  position: fixed; top: clamp(140px, 32vw, 180px); left: 6vw;
+  z-index: 6; width: clamp(120px, 28vw, 170px);
+  background: rgba(255,255,255,0.9);
+  border: 4px solid #db2777;
+  border-radius: 14px 14px 26px 26px;
+  padding: 8px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  font-size: 13px; font-weight: 900; color:#831843;
+  text-align: center;
+}
+.tray-grid{
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px; margin-top: 6px; min-height: 50px;
+}
+.tray-slot{
+  background: rgba(244,114,182,0.15);
+  border-radius: 8px; min-height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #831843; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#831843; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">PRINCESS<br>CUPCAKES</div>
+    <div class="title-hero">👸</div>
+    <div class="title-sub">Bring the right cupcake to the princess!</div>
+    <button class="start-btn" id="btnStart">👸 Start Tea Party</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Cupcake</span>
+    <span class="hud-target" id="hudTarget">5</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="castle">🏰</div>
+  <div class="princess" id="princess">👸</div>
+
+  <div class="tray">
+    Princess Tray
+    <div class="tray-grid" id="tray"></div>
+  </div>
+
+  <div class="tea-table" id="tea"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">TEA TIME!</div>
+    <div class="title-hero">👸</div>
+    <div class="celeb-count" id="celebCount">Princess is happy!</div>
+    <button class="start-btn" id="btnAgain">👸 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [3,4,5,6,7,8];
+const CC_CLASSES = ['cc1','cc2','cc3','cc4','cc5','cc6'];
+
+const ROUNDS = [
+  { prompts: 4 },
+  { prompts: 4 },
+  { prompts: 4 },
+  { prompts: 4 }
+];
+
+let roundIdx = 0, promptIdx = 0, eaten = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let plateEls = [];
+
+function spawnPlates(){
+  const tea = $('tea');
+  tea.innerHTML = '';
+  plateEls = [];
+  const ordering = shuffle(NUMS);
+  const colorPool = shuffle(CC_CLASSES);
+  ordering.forEach((n, i) => {
+    const plate = document.createElement('div');
+    plate.className = 'plate';
+    plate.dataset.n = n;
+    plate.innerHTML = `
+      <div class="cupcake">
+        <div class="cupcake-liner"></div>
+        <div class="cupcake-frost ${colorPool[i % colorPool.length]}"></div>
+        <div class="cupcake-cherry">🍒</div>
+        <div class="cupcake-num">${n}</div>
+      </div>`;
+    onTap(plate, () => handlePlateTap(plate, n));
+    tea.appendChild(plate);
+    plateEls.push(plate);
+  });
+}
+
+function handlePlateTap(el, n){
+  if(el.classList.contains('eaten')) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    el.classList.add('eaten');
+    audio.tone('sparkle');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 14);
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    $('princess').classList.add('eats');
+    setTimeout(() => $('princess').classList.remove('eats'), 700);
+    clearTimeout(hintTimer);
+    eaten++;
+    addToTray(n);
+    promptIdx++;
+    setTimeout(nextPrompt, 1100);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('can_you_find');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function addToTray(n){
+  const tray = $('tray');
+  const slot = document.createElement('div');
+  slot.className = 'tray-slot';
+  slot.textContent = '🧁';
+  slot.title = String(n);
+  tray.appendChild(slot);
+}
+
+function nextPrompt(){
+  const r = ROUNDS[roundIdx];
+  if(promptIdx >= r.prompts){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnPlates();  // shuffle positions each prompt
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    plateEls.forEach(p => {
+      if(Number(p.dataset.n) === currentTarget && !p.classList.contains('eaten')){
+        p.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.5) drop-shadow(0 0 16px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, ROUNDS[roundIdx].prompts);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= ROUNDS.length){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${eaten} cupcakes for the princess!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; eaten = 0;
+  $('tray').innerHTML = '';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// floating hearts background
+(function(){
+  const hearts = ['💖','💗','💞','🌸','✨'];
+  for(let i = 0; i < 16; i++){
+    const h = document.createElement('div');
+    h.className = 'heart';
+    h.textContent = pick(hearts);
+    h.style.top = Math.random()*70 + 'vh';
+    h.style.left = Math.random()*100 + 'vw';
+    h.style.setProperty('--dur', (3 + Math.random()*4) + 's');
+    h.style.setProperty('--delay', (-Math.random()*5) + 's');
+    document.body.appendChild(h);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

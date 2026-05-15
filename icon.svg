@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="40%" stop-color="#fbcfe8"/>
+      <stop offset="100%" stop-color="#a5b4fc"/>
+    </linearGradient>
+    <linearGradient id="numA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="numB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <g transform="translate(50,32)">
+    <text x="120" y="200" font-family="'Arial Rounded MT Bold','Nunito',Arial" font-weight="900"
+          font-size="200" fill="url(#numA)" stroke="#1e3a8a" stroke-width="8" text-anchor="middle">2</text>
+    <text x="300" y="200" font-family="'Arial Rounded MT Bold','Nunito',Arial" font-weight="900"
+          font-size="200" fill="url(#numB)" stroke="#1e3a8a" stroke-width="8" text-anchor="middle">0</text>
+    <text x="208" y="400" font-family="'Arial Rounded MT Bold','Nunito',Arial" font-weight="900"
+          font-size="78" fill="#1e3a8a" text-anchor="middle">Count to</text>
+  </g>
+  <g transform="translate(40,420)">
+    <text font-size="64">🚀</text>
+    <text x="100" font-size="64">👻</text>
+    <text x="200" font-size="64">🎣</text>
+    <text x="300" font-size="64">🦄</text>
+    <text x="400" font-size="64">🎈</text>
+  </g>
+</svg>

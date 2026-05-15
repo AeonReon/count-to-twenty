@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#16a34a">
+<title>Dragon Eggs · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #fed7aa 35%, #86efac 75%, #16a34a 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fbbf24; }
+.home-bubble{ border-color:#fbbf24; }
+
+.mountains{
+  position:absolute; top: 13vh; left: 0; right: 0;
+  text-align: center; font-size: clamp(60px, 16vw, 130px);
+  opacity: 0.4; pointer-events: none;
+}
+
+.cloud{
+  position:absolute; pointer-events:none; opacity:0.7;
+  font-size: clamp(36px, 8vw, 60px);
+  animation: cloudDrift linear infinite;
+}
+@keyframes cloudDrift{ from{ transform: translateX(-150px) } to { transform: translateX(110vw) } }
+
+/* nest area */
+.nest{
+  position:absolute; bottom: 8vh; left: 0; right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 3vw, 22px);
+  padding: 0 clamp(14px,4vw,30px) 10px;
+  z-index: 3;
+}
+.nest::before{
+  content: ''; position: absolute; bottom: -30px;
+  left: 8%; right: 8%; height: 80px;
+  background: radial-gradient(ellipse at center, #92400e 30%, #78350f 60%, transparent 75%);
+  border-radius: 50%; z-index: -1;
+}
+
+/* egg cell */
+.egg-cell{
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  aspect-ratio: 1 / 1.15;
+  cursor: pointer; touch-action: manipulation;
+  transition: transform 0.15s var(--bounce);
+}
+.egg-cell:active{ transform: scale(0.93); }
+
+.egg-shell{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+  border: 4px solid #fff;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3), inset -10px -14px 20px rgba(0,0,0,0.18);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.egg-shell::after{
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.7), transparent 40%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+.egg-num{
+  font-size: clamp(34px, 8vw, 56px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  text-shadow: 2px 3px 0 rgba(0,0,0,0.35);
+  font-weight: 900;
+  position: relative; z-index: 2;
+}
+
+/* egg palettes */
+.ec1{ --c1:#fde68a; --c2:#d97706; }
+.ec2{ --c1:#bfdbfe; --c2:#2563eb; }
+.ec3{ --c1:#fbcfe8; --c2:#db2777; }
+.ec4{ --c1:#ddd6fe; --c2:#7c3aed; }
+.ec5{ --c1:#bbf7d0; --c2:#16a34a; }
+.ec6{ --c1:#fecaca; --c2:#dc2626; }
+
+.egg-cell.hatching .egg-shell{ animation: eggCrack 1s var(--bounce) forwards; }
+@keyframes eggCrack{
+  0%   { transform: scale(1) rotate(0); }
+  20%  { transform: scale(1.05) rotate(-5deg); }
+  40%  { transform: scale(1.05) rotate(5deg); }
+  60%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+.egg-cell.hatching .baby-dragon{
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(60px, 14vw, 90px);
+  animation: dragonAppear 1.2s var(--bounce) 0.6s forwards;
+  opacity: 0;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  z-index: 4;
+}
+@keyframes dragonAppear{
+  0%   { opacity: 0; transform: scale(0.3); }
+  50%  { opacity: 1; transform: scale(1.2) rotate(-10deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.egg-cell.wobble{ animation: wobble 0.5s ease-in-out; }
+
+.egg-cell.idle .egg-shell{
+  animation: eggWobble 3s ease-in-out infinite var(--delay,0s);
+}
+@keyframes eggWobble{
+  0%,100%{ transform: rotate(-2deg); }
+  50%   { transform: rotate(2deg); }
+}
+
+/* dragon tracker — count of hatched dragons */
+.dragon-counter{
+  position: fixed; bottom: 1.5vh; left: 50%;
+  transform: translateX(-50%); z-index: 6;
+  background: rgba(255,255,255,0.95);
+  border: 4px solid #16a34a; border-radius: 24px;
+  padding: 8px 18px;
+  font-size: 16px; font-weight: 900; color:#14532d;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.dragon-counter-num{
+  font-size: 24px; color:#dc2626;
+  -webkit-text-stroke: 1.5px #14532d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fbbf24; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">DRAGON EGGS</div>
+    <div class="title-hero">🐉</div>
+    <div class="title-sub">Hatch the right egg!</div>
+    <button class="start-btn" id="btnStart">🐉 Start Hatching</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Hatch egg</span>
+    <span class="hud-target" id="hudTarget">7</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="mountains">⛰️ 🗻 ⛰️</div>
+  <div class="nest" id="nest"></div>
+
+  <div class="dragon-counter">
+    🐉 <span class="dragon-counter-num" id="dragonCount">0</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">DRAGONS HATCHED!</div>
+    <div class="title-hero">🐉</div>
+    <div class="celeb-count" id="celebCount">All baby dragons free!</div>
+    <button class="start-btn" id="btnAgain">🐉 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [4,5,6,7,8,9];
+const EC_CLASSES = ['ec1','ec2','ec3','ec4','ec5','ec6'];
+const BABY_DRAGONS = ['🐲','🐉','🦖'];
+
+const ROUNDS = [
+  { prompts: 4 },
+  { prompts: 4 },
+  { prompts: 4 },
+  { prompts: 4 }
+];
+
+let roundIdx = 0, promptIdx = 0, hatched = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let eggEls = [];
+
+function spawnEggs(){
+  const nest = $('nest');
+  nest.innerHTML = '';
+  eggEls = [];
+  const ordering = shuffle(NUMS);
+  const colors = shuffle(EC_CLASSES);
+  ordering.forEach((n, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'egg-cell idle';
+    cell.dataset.n = n;
+    cell.innerHTML = `
+      <div class="egg-shell ${colors[i % colors.length]}">
+        <div class="egg-num">${n}</div>
+      </div>`;
+    cell.style.setProperty('--delay', (-Math.random()*3) + 's');
+    onTap(cell, () => handleEggTap(cell, n));
+    nest.appendChild(cell);
+    eggEls.push(cell);
+  });
+}
+
+function handleEggTap(el, n){
+  if(el.classList.contains('hatching')) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    // hatch sequence: insert baby-dragon then start animation
+    const baby = document.createElement('div');
+    baby.className = 'baby-dragon';
+    baby.textContent = pick(BABY_DRAGONS);
+    el.appendChild(baby);
+    el.classList.remove('idle');
+    el.classList.add('hatching');
+    audio.tone('sparkle');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 16);
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    hatched++;
+    $('dragonCount').textContent = hatched;
+    promptIdx++;
+    setTimeout(nextPrompt, 1700);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function nextPrompt(){
+  const r = ROUNDS[roundIdx];
+  if(promptIdx >= r.prompts){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnEggs();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    eggEls.forEach(e => {
+      if(Number(e.dataset.n) === currentTarget && !e.classList.contains('hatching')){
+        e.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fbbf24)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, ROUNDS[roundIdx].prompts);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= ROUNDS.length){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${hatched} baby dragons hatched!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; hatched = 0;
+  $('dragonCount').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// drifting clouds
+(function(){
+  for(let i=0; i<4; i++){
+    const c = document.createElement('div');
+    c.className = 'cloud';
+    c.textContent = pick(['☁️','⛅','☁️']);
+    c.style.top = (5 + Math.random()*20) + 'vh';
+    c.style.animationDuration = (40 + Math.random()*30) + 's';
+    c.style.animationDelay = (-Math.random()*60) + 's';
+    document.body.appendChild(c);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

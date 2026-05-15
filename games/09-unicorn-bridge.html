@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#a855f7">
+<title>Unicorn Bridge · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fce7f3 0%, #f0abfc 30%, #c4b5fd 60%, #a5b4fc 100%);
+  color: #4c1d95;
+}
+.back-home-btn{ color:#4c1d95; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.rainbow{
+  position: absolute; top: 8vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(80px, 22vw, 160px);
+  filter: drop-shadow(0 6px 14px rgba(255,255,255,0.5));
+  pointer-events: none;
+}
+.castle-far{
+  position: absolute; bottom: 25vh; right: 6vw;
+  font-size: clamp(56px, 14vw, 90px);
+  filter: drop-shadow(0 0 14px #fde047);
+  animation: castleGlow 3s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes castleGlow{ 0%,100%{ filter: drop-shadow(0 0 14px #fde047); transform: scale(1) } 50%{ filter: drop-shadow(0 0 24px #fde047); transform: scale(1.03) } }
+.cloud{
+  position: absolute; pointer-events: none; opacity: 0.7;
+  font-size: clamp(34px, 8vw, 56px);
+  animation: cloudDrift linear infinite;
+}
+@keyframes cloudDrift{ from{ transform: translateX(-150px) } to { transform: translateX(110vw) } }
+
+/* river */
+.river{
+  position: absolute; bottom: 5vh; left: 0; right: 0;
+  height: 28vh; z-index: 1;
+  background: linear-gradient(180deg, rgba(192,132,252,0.4) 0%, rgba(124,58,237,0.7) 100%);
+  box-shadow: inset 0 8px 14px rgba(255,255,255,0.4);
+}
+.river::before{
+  content:''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer{ 0%,100%{ opacity:0.4 } 50%{ opacity:1 } }
+
+/* bridge of stones */
+.bridge{
+  position: absolute; bottom: 14vh;
+  left: 0; right: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(10px, 3vw, 20px);
+  gap: clamp(4px, 1vw, 10px);
+}
+
+.stone{
+  position: relative;
+  flex: 1; max-width: 16vw;
+  aspect-ratio: 1 / 0.95;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.stone:active{ transform: scale(0.93); }
+.stone-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 16px rgba(76,29,149,0.5), inset 0 -8px 14px rgba(0,0,0,0.2);
+}
+.stone-num{
+  font-size: clamp(28px, 7vw, 44px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.4);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+}
+/* rainbow gradient stones */
+.s1{ --c1:#fca5a5; --c2:#dc2626; }
+.s2{ --c1:#fdba74; --c2:#ea580c; }
+.s3{ --c1:#fde047; --c2:#ca8a04; }
+.s4{ --c1:#86efac; --c2:#16a34a; }
+.s5{ --c1:#93c5fd; --c2:#2563eb; }
+.s6{ --c1:#c4b5fd; --c2:#7c3aed; }
+
+.stone.stepped .stone-disc{
+  animation: stoneGlow 1s var(--bounce);
+  background: linear-gradient(180deg, #fff, #fde047);
+  border-color: #fde047;
+  box-shadow: 0 0 30px #fde047, inset 0 -8px 14px rgba(217,119,6,0.2);
+}
+@keyframes stoneGlow{
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.stone.stepped .stone-num{ color: #4c1d95; -webkit-text-stroke-color: #fff; }
+.stone.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* unicorn moves along the bridge */
+.unicorn{
+  position: absolute; bottom: 26vh; left: 5%;
+  font-size: clamp(56px, 14vw, 90px); z-index: 5;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
+  transition: left 0.9s var(--bounce);
+  animation: unicornIdle 1.8s ease-in-out infinite;
+}
+@keyframes unicornIdle{ 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
+.unicorn.hop{ animation: unicornHop 0.7s var(--bounce); }
+@keyframes unicornHop{
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-30px) rotate(-8deg); }
+  100% { transform: translateY(0); }
+}
+
+/* progress dots */
+.dots{
+  position: fixed; bottom: 1.5vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  display: flex; gap: 8px;
+  background: rgba(255,255,255,0.92);
+  border: 3px solid #4c1d95; border-radius: 20px;
+  padding: 6px 12px;
+  font-weight: 900; color: #4c1d95;
+  align-items: center; font-size: 14px;
+}
+.dot{ width: 12px; height: 12px; border-radius: 50%; background: #e9d5ff; }
+.dot.on{ background: #fde047; box-shadow: 0 0 6px #fde047; }
+
+.celeb-big{ -webkit-text-stroke:3px #4c1d95; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#4c1d95; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">UNICORN BRIDGE</div>
+    <div class="title-hero">🦄</div>
+    <div class="title-sub">Tap stones to help unicorn cross!</div>
+    <button class="start-btn" id="btnStart">🦄 Start Journey</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Step on stone</span>
+    <span class="hud-target" id="hudTarget">11</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="rainbow">🌈</div>
+  <div class="castle-far">🏰</div>
+
+  <div class="river"></div>
+  <div class="bridge" id="bridge"></div>
+
+  <div class="unicorn" id="unicorn">🦄</div>
+
+  <div class="dots">
+    Bridge: <span id="dots"></span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">UNICORN MADE IT!</div>
+    <div class="title-hero">🦄</div>
+    <div class="celeb-count" id="celebCount">Safely across the bridge!</div>
+    <button class="start-btn" id="btnAgain">🦄 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [8,9,10,11,12,13];
+const S_CLASSES = ['s1','s2','s3','s4','s5','s6'];
+
+const TOTAL_STEPS = 16; // 4 rounds × 4 stones
+let stepsDone = 0;
+let roundIdx = 0, promptIdx = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let stoneEls = [];
+
+function buildDots(){
+  const wrap = $('dots');
+  wrap.innerHTML = '';
+  for(let i = 0; i < TOTAL_STEPS; i++){
+    const d = document.createElement('span');
+    d.className = 'dot';
+    wrap.appendChild(d);
+  }
+}
+
+function refreshDots(){
+  const dots = document.querySelectorAll('#dots .dot');
+  dots.forEach((d, i) => d.classList.toggle('on', i < stepsDone));
+}
+
+function moveUnicorn(){
+  const pct = (stepsDone / TOTAL_STEPS) * 90 + 5;
+  $('unicorn').style.left = pct + '%';
+  $('unicorn').classList.add('hop');
+  setTimeout(() => $('unicorn').classList.remove('hop'), 700);
+}
+
+function spawnStones(){
+  const bridge = $('bridge');
+  bridge.innerHTML = '';
+  stoneEls = [];
+  const ordering = shuffle(NUMS);
+  ordering.forEach((n, i) => {
+    const s = document.createElement('div');
+    s.className = 'stone';
+    s.dataset.n = n;
+    s.innerHTML = `
+      <div class="stone-disc ${S_CLASSES[i % S_CLASSES.length]}">
+        <span class="stone-num">${n}</span>
+      </div>`;
+    onTap(s, () => handleStoneTap(s, n));
+    bridge.appendChild(s);
+    stoneEls.push(s);
+  });
+}
+
+function handleStoneTap(el, n){
+  if(el.classList.contains('stepped')) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    el.classList.add('stepped');
+    audio.tone('sparkle');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 14);
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    stepsDone++;
+    refreshDots();
+    moveUnicorn();
+    promptIdx++;
+    setTimeout(nextPrompt, 1100);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnStones();  // re-shuffle each step so the kid reads the digit
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('tap_the_number');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    stoneEls.forEach(s => {
+      if(Number(s.dataset.n) === currentTarget && !s.classList.contains('stepped')){
+        s.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1300);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${stepsDone} bridge stones crossed!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; stepsDone = 0;
+  buildDots(); refreshDots();
+  $('unicorn').style.left = '5%';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+(function(){
+  for(let i=0; i<5; i++){
+    const c = document.createElement('div');
+    c.className = 'cloud';
+    c.textContent = pick(['☁️','⛅','☁️']);
+    c.style.top = (5 + Math.random()*25) + 'vh';
+    c.style.animationDuration = (40 + Math.random()*30) + 's';
+    c.style.animationDelay = (-Math.random()*60) + 's';
+    document.body.appendChild(c);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>
