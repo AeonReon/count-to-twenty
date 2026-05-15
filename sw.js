@@ -1,7 +1,7 @@
 // Count to Twenty — offline-first service worker.
 // Pre-cache shell + audio so the PWA runs on a tablet with no internet.
 
-const CACHE = 'c2t-v3';
+const CACHE = 'c2t-v4';
 const SHELL = [
   './',
   './index.html',

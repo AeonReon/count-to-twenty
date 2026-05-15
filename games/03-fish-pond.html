@@ -38,18 +38,28 @@ html, body{
   pointer-events: none;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
 }
+/* Fishing line — fixed at the rod tip, rotates toward fish, extends to hook it */
 .line{
-  position:absolute; top: clamp(70px, 14vw, 100px);
-  left: 50%; transform: translateX(-50%);
-  width: 3px; background: rgba(0,0,0,0.5);
-  height: 0; z-index: 4;
-  transition: height 0.3s ease-in, opacity 0.3s;
+  position: fixed;
+  left: 50%;
+  top: clamp(70px, 14vw, 100px);
+  width: 3px;
+  height: 0;
+  background: rgba(0,0,0,0.55);
+  transform-origin: top center;
+  transform: translateX(-50%) rotate(0deg);
+  z-index: 7;
+  pointer-events: none;
+  opacity: 0;
 }
-.line.drop{ height: 30vh; }
+.line.casting{ opacity: 1; }
 .hook{
-  position:absolute; top: 100%; left: 50%;
+  position: absolute;
+  top: 100%; left: 50%;
   transform: translate(-50%, -8px);
-  font-size: 24px; pointer-events:none;
+  font-size: 22px;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 
 /* pond water */
@@ -221,6 +231,78 @@ let promptList = [];
 let activeFish = [];
 let spawnTimer = null;
 let hintTimer = null;
+let lineBusy = false;
+
+function rodTipXY(){
+  const x = innerWidth / 2;
+  const y = Math.max(70, Math.min(100, innerWidth * 0.14));
+  return { x, y };
+}
+
+// Drop a real fishing line from the rod toward a target point.
+// Resolves when the line reaches the target.
+function castLineTo(tx, ty){
+  return new Promise(resolve => {
+    const line = $('line');
+    const { x: rx, y: ry } = rodTipXY();
+    const dx = tx - rx, dy = ty - ry;
+    const dist = Math.max(20, Math.sqrt(dx*dx + dy*dy));
+    const angleDeg = Math.atan2(dx, dy) * 180 / Math.PI;
+    line.style.transform = `translateX(-50%) rotate(${angleDeg}deg)`;
+    line.style.height = '0px';
+    line.classList.add('casting');
+    const a = line.animate(
+      [{ height: '0px' }, { height: dist + 'px' }],
+      { duration: 320, easing: 'cubic-bezier(0.55,0.085,0.68,0.53)', fill: 'forwards' }
+    );
+    a.onfinish = () => resolve(dist);
+  });
+}
+
+// Reel the caught fish up to the rod, then off-screen to the bucket area.
+function reelFishUp(rect, color, value){
+  const { x: rx, y: ry } = rodTipXY();
+  const fishCx = rect.left + rect.width / 2;
+  const fishCy = rect.top + rect.height / 2;
+  // Clone the fish so it can travel OUT of the pond's overflow:hidden box
+  const clone = document.createElement('div');
+  clone.className = 'fish ' + color + ' caught-clone';
+  clone.innerHTML = `
+    <div class="fish-body"></div>
+    <div class="fish-tail"></div>
+    <div class="fish-eye"></div>
+    <div class="fish-num">${value}</div>`;
+  clone.style.position = 'fixed';
+  clone.style.left = rect.left + 'px';
+  clone.style.top  = rect.top + 'px';
+  clone.style.width  = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.zIndex = 8;
+  clone.style.transition = 'none';
+  document.body.appendChild(clone);
+
+  const dx = rx - fishCx, dy = ry - fishCy;
+  clone.animate(
+    [
+      { transform: 'translate(0,0) scale(1) rotate(0)' },
+      { transform: `translate(${dx*0.5}px, ${dy*0.5}px) scale(0.85) rotate(20deg)`, offset: 0.5 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.35) rotate(60deg)`, opacity: 0 }
+    ],
+    { duration: 650, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  // Retract the line in sync with the reel-up
+  const line = $('line');
+  const currentH = parseFloat(getComputedStyle(line).height) || 200;
+  line.animate(
+    [{ height: currentH + 'px' }, { height: '0px' }],
+    { duration: 650, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    line.classList.remove('casting');
+    line.style.height = '0px';
+    clone.remove();
+  }, 700);
+}
 
 function spawnFish(value, color){
   const r = ROUNDS[roundIdx];
@@ -264,24 +346,34 @@ function spawnFish(value, color){
 }
 
 function handleFishTap(el, n){
-  if(el.classList.contains('caught')) return;
+  if(el.classList.contains('caught') || lineBusy) return;
   const r = el.getBoundingClientRect();
   const cx = r.left + r.width/2, cy = r.top + r.height/2;
   if(n === currentTarget){
-    // drop line + reel up
-    const ln = $('line'); ln.classList.add('drop');
-    setTimeout(() => ln.classList.remove('drop'), 700);
+    lineBusy = true;
     el.classList.add('caught');
-    audio.tone('ding');
-    starBurst(cx, cy);
-    burstConfetti(cx, cy, 14);
+    // capture this fish's swim animation + color so the clone can replicate
+    const entry = activeFish.find(f => f.el === el);
+    const color = (el.className.match(/c-\w+/) || [''])[0];
+    if(entry){
+      try { entry.anim.cancel(); } catch(e){}
+      activeFish = activeFish.filter(f => f !== entry);
+    }
+    el.style.opacity = 0;  // hide original; clone takes over outside the pond
+    castLineTo(cx, cy).then(() => {
+      audio.tone('ding');
+      starBurst(cx, cy);
+      burstConfetti(cx, cy, 14);
+      reelFishUp(r, color, n);
+      el.remove();
+    });
     audio.clearQueue();
     audio.speakCategory('correct');
     clearTimeout(hintTimer);
     caught++;
     $('bucketCount').textContent = caught;
     promptIdx++;
-    setTimeout(nextPrompt, 1100);
+    setTimeout(() => { lineBusy = false; nextPrompt(); }, 1300);
   } else {
     el.classList.add('wobble');
     audio.tone('wrong');

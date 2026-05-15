@@ -216,11 +216,13 @@ const NUMS = [9,10,11,12,13,14];
 const HB_CLASSES = ['hb1','hb2','hb3','hb4','hb5','hb6'];
 const TOTAL_STEPS = 16;
 
+// duration = how long each balloon takes to rise across the screen (ms)
+// spawnGap = time between balloon launches (ms) — staggered, not clumped
 const ROUNDS = [
-  { prompts: 4, speed: 0.55 },
-  { prompts: 4, speed: 0.8  },
-  { prompts: 4, speed: 1.0  },
-  { prompts: 4, speed: 1.3  }
+  { prompts: 4, duration: 7000, spawnGap: 1300 },
+  { prompts: 4, duration: 6200, spawnGap: 1200 },
+  { prompts: 4, duration: 5500, spawnGap: 1100 },
+  { prompts: 4, duration: 4800, spawnGap: 1000 }
 ];
 
 let roundIdx = 0, promptIdx = 0, altitude = 0, climbed = 0;
@@ -229,6 +231,7 @@ let promptList = [];
 let activeBalloons = [];
 let spawnTimer = null;
 let hintTimer = null;
+let sinceTarget = 0;  // how many non-target balloons in a row — forces target soon
 
 function spawnBalloon(value, color){
   const r = ROUNDS[roundIdx];
@@ -246,18 +249,20 @@ function spawnBalloon(value, color){
     </div>
     <div class="hab-ropes"></div>
     <div class="hab-basket"></div>`;
-  const startX = Math.random() * (w - habW);
+  // Spread starting X across 4 lanes so balloons don't overlap on spawn
+  const lane = Math.floor(Math.random() * 4);
+  const laneWidth = (w - habW) / 4;
+  const startX = lane * laneWidth + Math.random() * (laneWidth - 10);
   b.style.left = startX + 'px';
   sky.appendChild(b);
   const dy = h + 240;
-  const duration = (dy / (r.speed * 60)) * 1000;
-  const drift = (Math.random()-0.5) * 80;
+  const drift = (Math.random() - 0.5) * 70;
   const anim = b.animate(
     [
       { transform: `translate(0, 0)` },
       { transform: `translate(${drift}px, ${-dy}px)` }
     ],
-    { duration, easing: 'linear', fill: 'forwards' }
+    { duration: r.duration, easing: 'linear', fill: 'forwards' }
   );
   const entry = { el: b, anim };
   activeBalloons.push(entry);
@@ -266,6 +271,23 @@ function spawnBalloon(value, color){
     const i = activeBalloons.indexOf(entry); if(i >= 0) activeBalloons.splice(i, 1);
     b.remove();
   };
+}
+
+function spawnNext(){
+  // Guarantee the target appears reasonably often:
+  //   - if there's no target on screen → next balloon IS target
+  //   - if we've gone 2 non-target balloons in a row → next IS target
+  //   - otherwise 50% chance
+  const targetOnScreen = activeBalloons.some(b => Number(b.el.dataset.n) === currentTarget);
+  let val;
+  if(currentTarget !== null && (!targetOnScreen || sinceTarget >= 2 || Math.random() < 0.5)){
+    val = currentTarget;
+    sinceTarget = 0;
+  } else {
+    do { val = pick(NUMS); } while(val === currentTarget);
+    sinceTarget++;
+  }
+  spawnBalloon(val, pick(HB_CLASSES));
 }
 
 function handleBalloonTap(el, n){
@@ -300,22 +322,11 @@ function handleBalloonTap(el, n){
 }
 
 function moveClimber(){
-  const pct = (climbed / TOTAL_STEPS) * 70 + 8;
+  // Reach the summit by the last step — bigger visible jumps each pop
+  const pct = (climbed / TOTAL_STEPS) * 72 + 8;
   $('climber').style.bottom = pct + 'vh';
   $('climber').classList.add('climb');
   setTimeout(() => $('climber').classList.remove('climb'), 700);
-}
-
-function keepSkyFull(){
-  const desired = 5;
-  while(activeBalloons.length < desired){
-    let val;
-    if(Math.random() < 0.4){ val = currentTarget; }
-    else {
-      do { val = pick(NUMS); } while(val === currentTarget && Math.random() < 0.5);
-    }
-    spawnBalloon(val, pick(HB_CLASSES));
-  }
 }
 
 function clearSky(){
@@ -360,18 +371,20 @@ function scheduleHint(){
 function startRound(){
   const r = ROUNDS[roundIdx];
   promptIdx = 0;
+  sinceTarget = 99;  // force target on the very first balloon
   $('hudRound').textContent = (roundIdx+1) + '/4';
   promptList = shuffle(NUMS).slice(0, r.prompts);
   clearSky();
   showBanner('Round ' + (roundIdx+1));
   setTimeout(() => {
     if(spawnTimer) clearInterval(spawnTimer);
-    keepSkyFull();
+    nextPrompt();
+    // Single balloon spawned every spawnGap ms — staggered, no clumping
+    spawnNext();
     spawnTimer = setInterval(() => {
       if(!$('scrGame').classList.contains('active')){ clearInterval(spawnTimer); return; }
-      keepSkyFull();
-    }, 700);
-    nextPrompt();
+      spawnNext();
+    }, r.spawnGap);
   }, 1100);
 }
 
