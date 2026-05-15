@@ -94,23 +94,23 @@ class GameAudio {
       a.onended = r; a.onerror = () => r();
       a.play().catch(() => r());
     });
-    // If the WebAudio context isn't actually running, skip WebAudio entirely.
-    // (decoded buffers scheduled on a suspended context never fire onended.)
-    if(!this.ctx || this.ctx.state !== 'running') return fb();
-    return fetch(path)
-      .then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
-      .then(b => this.ctx.decodeAudioData(b))
-      .then(buf => new Promise(r => {
-        const s = this.ctx.createBufferSource();
-        s.buffer = buf; s.connect(this.ctx.destination);
-        let done = false;
-        const finish = () => { if(done) return; done = true; r(); };
-        s.onended = finish;
-        s.start();
-        // Watchdog: if onended doesn't fire (suspended context), fall back
-        setTimeout(finish, (buf.duration * 1000) + 500);
-      }))
-      .catch(() => fb());
+    if(this.ctx && this.ctx.state !== 'closed'){
+      return fetch(path)
+        .then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
+        .then(b => this.ctx.decodeAudioData(b))
+        .then(buf => new Promise(r => {
+          const s = this.ctx.createBufferSource();
+          s.buffer = buf; s.connect(this.ctx.destination);
+          let done = false;
+          const finish = () => { if(done) return; done = true; r(); };
+          s.onended = finish;
+          s.start();
+          // Watchdog: if onended doesn't fire, resolve so the queue doesn't stall
+          setTimeout(finish, (buf.duration * 1000) + 800);
+        }))
+        .catch(() => fb());
+    }
+    return fb();
   }
   speak(path){
     const job = { path, resolve: null };
@@ -192,8 +192,20 @@ const shuffle = arr => {
   return a;
 };
 function onTap(el, fn){
-  el.addEventListener('click', fn);
-  el.addEventListener('touchend', e => { e.preventDefault(); fn(e); });
+  // touchstart fires immediately on touch — iOS uses this as the
+  // user-gesture context for unlocking the AudioContext. touchend is too late.
+  let t = false;
+  el.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if(t) return;
+    t = true;
+    fn(e);
+    setTimeout(() => t = false, 300);
+  }, { passive: false });
+  el.addEventListener('click', e => {
+    if(t) return;
+    fn(e);
+  });
 }
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
