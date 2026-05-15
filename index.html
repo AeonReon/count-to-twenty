@@ -150,10 +150,6 @@ GAMES.forEach((g, i) => {
   a.className = 'card ' + g.theme;
   a.href = g.href;
   const completed = !!(progress['c2t/' + g.href.split('/').pop().replace('.html','')] || {}).completed;
-  // Lock games whose previous game has not been completed (game 1 always open)
-  const prevHref = i > 0 ? GAMES[i-1].href.split('/').pop().replace('.html','') : null;
-  const prevDone = i === 0 || !!(progress['c2t/' + prevHref] || {}).completed;
-  if(!prevDone) a.classList.add('locked');
   a.innerHTML = `
     <div class="card-header">
       <span class="card-emoji">${g.emoji}</span>

@@ -19,17 +19,38 @@ class GameAudio {
   constructor(opts){
     this.base = (opts && opts.base) || 'audio/';
     this.ctx = null; this.musicGain = null; this.sfxGain = null;
-    this.musicVol = 0.06; this.musicDucked = 0.018;
+    this.musicVol = 0.10; this.musicDucked = 0.025;
     this.speaking = false; this.queue = []; this._last = {};
+    this._unlocked = false;
+    this._htmlPrimed = false;
   }
   _init(){
     if(this.ctx) return;
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     const m = this.ctx.createGain(); m.gain.value = 1; m.connect(this.ctx.destination);
     this.musicGain = this.ctx.createGain(); this.musicGain.gain.value = this.musicVol; this.musicGain.connect(m);
-    this.sfxGain = this.ctx.createGain(); this.sfxGain.gain.value = 0.35; this.sfxGain.connect(m);
+    this.sfxGain = this.ctx.createGain(); this.sfxGain.gain.value = 0.7; this.sfxGain.connect(m);
   }
-  unlock(){ this._init(); if(this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{}); }
+  unlock(){
+    this._init();
+    if(this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{});
+    // iOS gesture-bind: play a silent one-sample buffer inside the user gesture
+    try {
+      const buf = this.ctx.createBuffer(1, 1, 22050);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf; src.connect(this.ctx.destination); src.start(0);
+    } catch(e){}
+    // Prime an HTML <audio> element too (fallback path needs gesture unlock on iOS PWA)
+    if(!this._htmlPrimed){
+      this._htmlPrimed = true;
+      try {
+        const a = new Audio();
+        a.src = 'data:audio/mp3;base64,SUQzAwAAAAAAClRTU0UAAAAGAAADbnVsbAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        a.volume = 0; a.play().then(() => a.pause()).catch(() => {});
+      } catch(e){}
+    }
+    this._unlocked = true;
+  }
   tone(type){
     this._init();
     const c = this.ctx, n = c.currentTime;
@@ -69,21 +90,27 @@ class GameAudio {
   _playFile(path){
     const fb = () => new Promise(r => {
       const a = new Audio(path);
+      a.volume = 1;
       a.onended = r; a.onerror = () => r();
       a.play().catch(() => r());
     });
-    if(this.ctx && this.ctx.state !== 'closed'){
-      return fetch(path)
-        .then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
-        .then(b => this.ctx.decodeAudioData(b))
-        .then(buf => new Promise(r => {
-          const s = this.ctx.createBufferSource();
-          s.buffer = buf; s.connect(this.ctx.destination);
-          s.onended = r; s.start();
-        }))
-        .catch(() => fb());
-    }
-    return fb();
+    // If the WebAudio context isn't actually running, skip WebAudio entirely.
+    // (decoded buffers scheduled on a suspended context never fire onended.)
+    if(!this.ctx || this.ctx.state !== 'running') return fb();
+    return fetch(path)
+      .then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(b => this.ctx.decodeAudioData(b))
+      .then(buf => new Promise(r => {
+        const s = this.ctx.createBufferSource();
+        s.buffer = buf; s.connect(this.ctx.destination);
+        let done = false;
+        const finish = () => { if(done) return; done = true; r(); };
+        s.onended = finish;
+        s.start();
+        // Watchdog: if onended doesn't fire (suspended context), fall back
+        setTimeout(finish, (buf.duration * 1000) + 500);
+      }))
+      .catch(() => fb());
   }
   speak(path){
     const job = { path, resolve: null };
@@ -128,22 +155,28 @@ class GameAudio {
   }
   startMusic(){
     this._init();
-    const scale = [440.00,493.88,523.25,587.33,659.25,783.99,880.00];
-    let t = this.ctx.currentTime + 0.2;
-    const step = () => {
+    const begin = () => {
       if(!this.musicGain) return;
-      const f = scale[Math.floor(Math.random()*scale.length)];
-      const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-      o.type = 'triangle'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.7, t + 0.05);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-      o.connect(g); g.connect(this.musicGain);
-      o.start(t); o.stop(t + 0.55);
-      t += 0.4;
-      if(this.musicGain) setTimeout(step, 380);
+      const scale = [440.00, 493.88, 523.25, 587.33, 659.25, 783.99, 880.00];
+      let t = this.ctx.currentTime + 0.2;
+      const step = () => {
+        if(!this.musicGain) return;
+        const f = scale[Math.floor(Math.random()*scale.length)];
+        const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+        o.type = 'triangle'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.7, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+        o.connect(g); g.connect(this.musicGain);
+        o.start(t); o.stop(t + 0.55);
+        t += 0.4;
+        if(this.musicGain) setTimeout(step, 380);
+      };
+      step();
     };
-    step();
+    // Only start scheduling oscillators once the context is actually running
+    if(this.ctx.state === 'running') begin();
+    else this.ctx.resume().then(begin).catch(() => {});
   }
 }
 
