@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e7490">
+<title>Mermaid Pearl Dive · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #67e8f9 0%, #22d3ee 25%, #0891b2 60%, #134e4a 100%);
+  color: #ecfeff;
+}
+.back-home-btn{ color:#134e4a; border-color:#fde047; background:#ecfeff; }
+.home-bubble{ border-color:#fde047; }
+
+/* bubbles drifting up */
+.bubble{
+  position: absolute; pointer-events: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.15));
+  animation: bubbleRise var(--dur,7s) linear infinite var(--delay,0s);
+}
+@keyframes bubbleRise{
+  0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(-110vh) scale(1.1); opacity: 0; }
+}
+
+.seaweed{
+  position: absolute; bottom: 0; pointer-events: none;
+  font-size: clamp(60px, 14vw, 100px);
+  filter: drop-shadow(0 0 12px rgba(34,197,94,0.4));
+  animation: seaSway 3.5s ease-in-out infinite;
+}
+.seaweed.s1{ left: 2vw; }
+.seaweed.s2{ right: 2vw; animation-delay: -1.5s; }
+@keyframes seaSway{ 0%,100%{ transform: rotate(-6deg) } 50%{ transform: rotate(6deg) } }
+
+/* mermaid swimming at top */
+.mermaid{
+  position: absolute; top: 11vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(72px, 18vw, 120px);
+  z-index: 5;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.4));
+  animation: mermaidSwim 3s ease-in-out infinite;
+}
+@keyframes mermaidSwim{ 0%,100%{ transform: translate(-50%, 0) rotate(-4deg) } 50%{ transform: translate(-50%, -8px) rotate(4deg) } }
+.mermaid.catch{ animation: mermaidCatch 0.7s var(--bounce); }
+@keyframes mermaidCatch{
+  0%   { transform: translateX(-50%) scale(1) rotate(0); }
+  30%  { transform: translateX(-50%) scale(1.2) rotate(-10deg); }
+  60%  { transform: translateX(-50%) scale(1.1) rotate(10deg); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+/* treasure chest beside the mermaid (where pearls are collected) */
+.treasure{
+  position: fixed; top: 12vh; right: 6vw;
+  z-index: 6;
+  width: clamp(70px, 16vw, 100px);
+  height: clamp(50px, 12vw, 76px);
+  background: linear-gradient(180deg, #92400e, #422006);
+  border: 4px solid #fbbf24;
+  border-radius: 6px 6px 12px 12px;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 4px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+  overflow: hidden;
+}
+.treasure::before{
+  content:''; position:absolute; top: -8px; left: -2px; right: -2px;
+  height: 18px;
+  background: linear-gradient(180deg, #b45309, #92400e);
+  border: 4px solid #fbbf24; border-bottom: none;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+.treasure-fill{
+  width: 90%; height: 0;
+  background: linear-gradient(180deg, #fef3c7 0%, #fde047 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 12px #fde047;
+  transition: height 0.5s var(--bounce);
+}
+
+.pearl-count{
+  position: fixed; top: 14vh; right: 6vw;
+  transform: translateX(50%);
+  z-index: 7;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #134e4a; border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 12px; font-weight: 900; color:#134e4a;
+  pointer-events: none;
+}
+
+/* oysters on the ocean floor (grid) */
+.ocean-floor{
+  position: absolute; bottom: 9vh; left: 0; right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 2.5vw, 20px);
+  padding: 0 clamp(14px, 4vw, 32px);
+  z-index: 3;
+}
+
+.oyster{
+  position: relative;
+  aspect-ratio: 1 / 0.9;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.oyster:active{ transform: scale(0.93); }
+
+.oyster-bottom{
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 60%;
+  background: linear-gradient(180deg, #d1d5db 0%, #6b7280 70%, #374151 100%);
+  border: 3px solid #1f2937;
+  border-radius: 50% 50% 30% 30% / 100% 100% 0 0;
+  box-shadow: inset 0 -6px 12px rgba(0,0,0,0.4);
+}
+.oyster-top{
+  position: absolute; top: 8%; left: 0; right: 0;
+  height: 56%;
+  background: linear-gradient(180deg, #9ca3af 0%, #4b5563 100%);
+  border: 3px solid #1f2937;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  transform-origin: bottom center;
+  transition: transform 0.5s var(--bounce);
+  z-index: 3;
+}
+.oyster.opened .oyster-top{ transform: rotate(-45deg) translateY(-6px); }
+.oyster.opened{ animation: oysterPop 0.6s var(--bounce); }
+@keyframes oysterPop{ 0%{ transform: translateY(0) } 30%{ transform: translateY(-8px) scale(1.06) } 100%{ transform: translateY(0) } }
+.oyster.wobble{ animation: wobble 0.5s ease-in-out; }
+.pearl{
+  position: absolute; bottom: 32%; left: 50%;
+  transform: translateX(-50%);
+  width: 60%; height: 50%;
+  z-index: 2;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fdf2f8 40%, #fbcfe8 80%);
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 18px #fbcfe8, inset -6px -6px 12px rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 7vw, 44px); color:#831843;
+  -webkit-text-stroke: 2px #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  font-weight: 900;
+}
+
+/* pearl that shoots up to the mermaid */
+.flying-pearl{
+  position: fixed;
+  width: clamp(40px, 10vw, 60px); height: clamp(40px, 10vw, 60px);
+  background: radial-gradient(circle at 35% 30%, #fff, #fbcfe8);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 18px #fde047;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(20px, 5vw, 30px); font-weight: 900; color:#831843;
+  -webkit-text-stroke: 1.5px #fff;
+  z-index: 200; pointer-events: none;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #134e4a; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#ecfeff; text-shadow:2px 2px 0 #134e4a; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">PEARL DIVE</div>
+    <div class="title-hero">🧜‍♀️</div>
+    <div class="title-sub">Open the right oyster · Catch the pearl!</div>
+    <button class="start-btn" id="btnStart">🧜‍♀️ Dive Down</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Open oyster</span>
+    <span class="hud-target" id="hudTarget">15</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="mermaid" id="mermaid">🧜‍♀️</div>
+  <div class="treasure"><div class="treasure-fill" id="chest"></div></div>
+  <div class="pearl-count">🦪 <span id="pearlCount">0</span></div>
+
+  <div class="seaweed s1">🪸</div>
+  <div class="seaweed s2">🪸</div>
+
+  <div class="ocean-floor" id="floor"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">PEARLS COLLECTED!</div>
+    <div class="title-hero">🧜‍♀️</div>
+    <div class="celeb-count" id="celebCount">Treasure chest full!</div>
+    <button class="start-btn" id="btnAgain">🧜‍♀️ Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [12,13,14,15,16,17];
+
+let roundIdx = 0, promptIdx = 0, pearls = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let oysterEls = [];
+let busy = false;
+
+function spawnOysters(){
+  const floor = $('floor');
+  floor.innerHTML = '';
+  oysterEls = [];
+  shuffle(NUMS).forEach(n => {
+    const o = document.createElement('div');
+    o.className = 'oyster';
+    o.dataset.n = n;
+    o.innerHTML = `
+      <div class="oyster-bottom"></div>
+      <div class="pearl">${n}</div>
+      <div class="oyster-top"></div>`;
+    onTap(o, () => handleOysterTap(o, n));
+    floor.appendChild(o);
+    oysterEls.push(o);
+  });
+}
+
+function handleOysterTap(el, n){
+  if(busy || el.classList.contains('opened')) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('opened');
+    audio.tone('sparkle');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    // After oyster opens, the pearl flies UP to the mermaid + into the chest
+    setTimeout(() => sendPearlUp(el, n), 400);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function sendPearlUp(el, n){
+  const pearlR = el.querySelector('.pearl').getBoundingClientRect();
+  const startX = pearlR.left;
+  const startY = pearlR.top;
+  // target: the treasure chest opening
+  const chestR = $('chest').getBoundingClientRect();
+  const endX = chestR.left + chestR.width/2 - pearlR.width/2;
+  const endY = chestR.top  - pearlR.height/2;
+  const fly = document.createElement('div');
+  fly.className = 'flying-pearl';
+  fly.textContent = n;
+  fly.style.left = '0'; fly.style.top = '0';
+  fly.style.width  = pearlR.width + 'px';
+  fly.style.height = pearlR.height + 'px';
+  fly.style.transform = `translate(${startX}px, ${startY}px)`;
+  document.body.appendChild(fly);
+  // Curving arc up through the water — through the mermaid's hand area
+  const merR = $('mermaid').getBoundingClientRect();
+  const peakX = merR.left + merR.width/2 - pearlR.width/2;
+  const peakY = merR.top  + merR.height*0.6;
+  fly.animate(
+    [
+      { transform: `translate(${startX}px, ${startY}px) scale(1) rotate(0)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) scale(1.1) rotate(180deg)`, offset: 0.55 },
+      { transform: `translate(${endX}px, ${endY}px) scale(0.6) rotate(360deg)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 900, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  $('mermaid').classList.add('catch');
+  setTimeout(() => $('mermaid').classList.remove('catch'), 700);
+  setTimeout(() => {
+    fly.remove();
+    pearls++;
+    $('pearlCount').textContent = pearls;
+    const pct = Math.min(100, (pearls / 16) * 100);
+    $('chest').style.height = pct + '%';
+    audio.tone('ding');
+    const cR = $('chest').getBoundingClientRect();
+    starBurst(cR.left + cR.width/2, cR.top + cR.height/2);
+    promptIdx++;
+    busy = false;
+    setTimeout(nextPrompt, 400);
+  }, 900);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnOysters();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    oysterEls.forEach(o => {
+      if(Number(o.dataset.n) === currentTarget && !o.classList.contains('opened')){
+        o.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${pearls} pearls in the chest!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; pearls = 0;
+  $('pearlCount').textContent = '0';
+  $('chest').style.height = '0%';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// bubble background
+(function(){
+  setInterval(() => {
+    if(!$('scrGame').classList.contains('active')) return;
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.style.left = (Math.random()*100) + 'vw';
+    b.style.bottom = '0';
+    b.style.setProperty('--dur', (5 + Math.random()*4) + 's');
+    b.style.setProperty('--delay', '0s');
+    b.style.width = (8 + Math.random()*16) + 'px';
+    b.style.height = b.style.width;
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 9500);
+  }, 700);
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

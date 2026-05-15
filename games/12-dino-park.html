@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#16a34a">
+<title>Dino Park · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #d9f99d 40%, #86efac 75%, #16a34a 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.mountains{
+  position: absolute; top: 14vh; left: 0; right: 0;
+  text-align: center; font-size: clamp(60px, 16vw, 130px);
+  opacity: 0.35; pointer-events: none;
+}
+.bg-fern{
+  position: absolute; pointer-events: none; opacity: 0.6;
+  font-size: clamp(28px, 7vw, 44px);
+  animation: heroFloat 5s ease-in-out infinite;
+}
+.bg-fern.f1{ top: 35vh; left: 4vw; }
+.bg-fern.f2{ top: 40vh; right: 4vw; animation-delay: -2s; }
+
+/* ranger character — calls out which dino to feed */
+.ranger{
+  position: absolute; top: 13vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(50px, 12vw, 80px);
+  z-index: 5;
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.25));
+  animation: heroFloat 2.4s ease-in-out infinite;
+}
+.ranger.cheer{ animation: cheer 0.7s var(--bounce); }
+@keyframes cheer{
+  0%{ transform: translateX(-50%) scale(1); }
+  30%{ transform: translateX(-50%) scale(1.2) rotate(-10deg); }
+  60%{ transform: translateX(-50%) scale(1.1) rotate(10deg); }
+  100%{ transform: translateX(-50%) scale(1); }
+}
+
+/* dino pens grid */
+.pens{
+  position: absolute; bottom: 13vh; left: 0; right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 2.5vw, 18px);
+  padding: 0 clamp(14px, 4vw, 26px);
+  z-index: 3;
+}
+
+.pen{
+  position: relative;
+  aspect-ratio: 1 / 1.05;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: flex-end; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.pen:active{ transform: scale(0.93); }
+.pen-fence{
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 24%;
+  background: repeating-linear-gradient(90deg, #92400e 0 8px, #422006 8px 12px);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.2);
+  z-index: 2;
+}
+.pen-dino{
+  position: relative;
+  width: 100%; height: 100%;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 8%;
+}
+.pen-emoji{
+  font-size: clamp(60px, 14vw, 95px);
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  transition: transform 0.4s var(--bounce), filter 0.3s;
+  z-index: 1;
+}
+.pen.fed-1 .pen-emoji{ transform: scale(1.06); }
+.pen.fed-2 .pen-emoji{ transform: scale(1.13); filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)) drop-shadow(0 0 14px #fde047); }
+.pen.fed-3 .pen-emoji{ transform: scale(1.22); filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)) drop-shadow(0 0 22px #fde047); }
+.pen.chomp .pen-emoji{ animation: chomp 0.6s var(--bounce); }
+@keyframes chomp{ 0%{ transform: scale(1.1) } 25%{ transform: scale(1.3) rotate(-6deg) } 60%{ transform: scale(1.18) rotate(6deg) } 100%{ transform: scale(1.13) } }
+.pen-num{
+  position: absolute; top: 4%; left: 50%; transform: translateX(-50%);
+  z-index: 4;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #14532d; border-radius: 12px;
+  padding: 4px 10px;
+  font-size: clamp(28px, 7vw, 42px); color:#14532d;
+  -webkit-text-stroke: 1.5px #fff;
+  font-weight: 900; line-height: 1;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+.pen.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* leaf basket on the left + flying leaves */
+.basket{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 14px; z-index: 7;
+  width: clamp(56px, 13vw, 80px);
+  height: clamp(56px, 13vw, 80px);
+  background: linear-gradient(180deg, #84cc16, #4d7c0f);
+  border: 3px solid #fff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 6vw, 38px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.basket.shake{ animation: shake 0.4s; }
+@keyframes shake{ 0%,100%{transform:rotate(0)} 25%{transform:rotate(-15deg)} 75%{transform:rotate(15deg)} }
+.leaf{
+  position: fixed; font-size: clamp(20px, 5vw, 30px);
+  pointer-events: none; z-index: 200;
+  filter: drop-shadow(0 0 6px rgba(132,204,22,0.6));
+}
+
+/* fed counter */
+.fed-counter{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #14532d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#14532d;
+  display: flex; align-items: center; gap: 6px;
+}
+.fed-counter-num{ font-size: 20px; -webkit-text-stroke: 1.5px #fff; color:#dc2626; }
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">DINO PARK</div>
+    <div class="title-hero">🦕</div>
+    <div class="title-sub">Feed the right dinosaur a leaf!</div>
+    <button class="start-btn" id="btnStart">🦕 Start Feeding</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Feed dino</span>
+    <span class="hud-target" id="hudTarget">14</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="mountains">⛰️ 🗻 ⛰️</div>
+  <div class="bg-fern f1">🌿</div>
+  <div class="bg-fern f2">🌿</div>
+  <div class="ranger" id="ranger">🧑‍🌾</div>
+
+  <div class="basket" id="basket">🍃</div>
+
+  <div class="pens" id="pens"></div>
+
+  <div class="fed-counter">
+    🍃 <span class="fed-counter-num" id="fedCount">0</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">DINOS HAPPY!</div>
+    <div class="title-hero">🦖</div>
+    <div class="celeb-count" id="celebCount">All dinosaurs fed!</div>
+    <button class="start-btn" id="btnAgain">🦕 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [11,12,13,14,15,16];
+const DINOS = ['🦕','🦖','🐉','🦎','🐲','🦕'];
+
+let roundIdx = 0, promptIdx = 0, fed = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let penEls = [];
+let busy = false;
+let dinoMapping = {};   // n → emoji (stable across rounds)
+let fedCount = {};      // n → times fed
+
+function setupDinoMap(){
+  const pool = shuffle(DINOS);
+  NUMS.forEach((n, i) => { dinoMapping[n] = pool[i % pool.length]; fedCount[n] = 0; });
+}
+
+function spawnPens(){
+  const grid = $('pens');
+  grid.innerHTML = '';
+  penEls = [];
+  shuffle(NUMS).forEach(n => {
+    const pen = document.createElement('div');
+    pen.className = 'pen pen-' + n;
+    pen.dataset.n = n;
+    const lvl = fedCount[n];
+    if(lvl > 0) pen.classList.add('fed-' + Math.min(3, lvl));
+    pen.innerHTML = `
+      <div class="pen-num">${n}</div>
+      <div class="pen-dino"><span class="pen-emoji">${dinoMapping[n]}</span></div>
+      <div class="pen-fence"></div>`;
+    onTap(pen, () => handlePenTap(pen, n));
+    grid.appendChild(pen);
+    penEls.push(pen);
+  });
+}
+
+function handlePenTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    flyLeafTo(el, () => {
+      el.classList.add('chomp');
+      $('ranger').classList.add('cheer');
+      setTimeout(() => $('ranger').classList.remove('cheer'), 700);
+      setTimeout(() => el.classList.remove('chomp'), 700);
+      fedCount[n]++;
+      fed++;
+      $('fedCount').textContent = fed;
+      const lvl = Math.min(3, fedCount[n]);
+      el.classList.remove('fed-1','fed-2','fed-3');
+      el.classList.add('fed-' + lvl);
+      const rect = el.getBoundingClientRect();
+      starBurst(rect.left + rect.width/2, rect.top + rect.height/2);
+      burstConfetti(rect.left + rect.width/2, rect.top + rect.height/3, 12);
+      clearTimeout(hintTimer);
+      promptIdx++;
+      setTimeout(() => { busy = false; nextPrompt(); }, 900);
+    });
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function flyLeafTo(targetEl, done){
+  const basket = $('basket').getBoundingClientRect();
+  const tgt = targetEl.getBoundingClientRect();
+  const startX = basket.left + basket.width/2;
+  const startY = basket.top + basket.height/2;
+  const endX   = tgt.left + tgt.width/2;
+  const endY   = tgt.top + tgt.height*0.4;
+  $('basket').classList.add('shake');
+  setTimeout(() => $('basket').classList.remove('shake'), 400);
+  const leaf = document.createElement('div');
+  leaf.className = 'leaf';
+  leaf.textContent = '🍃';
+  leaf.style.left = '0'; leaf.style.top = '0';
+  leaf.style.transform = `translate(${startX}px, ${startY}px)`;
+  document.body.appendChild(leaf);
+  const peakX = (startX + endX) / 2;
+  const peakY = Math.min(startY, endY) - 80;
+  leaf.animate(
+    [
+      { transform: `translate(${startX}px, ${startY}px) rotate(0deg)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) rotate(180deg)`, offset: 0.55 },
+      { transform: `translate(${endX}px, ${endY}px) rotate(360deg) scale(0.6)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 750, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => { leaf.remove(); done(); }, 720);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnPens();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    penEls.forEach(p => {
+      if(Number(p.dataset.n) === currentTarget){
+        p.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${fed} leaves fed!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; fed = 0;
+  $('fedCount').textContent = '0';
+  setupDinoMap();
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

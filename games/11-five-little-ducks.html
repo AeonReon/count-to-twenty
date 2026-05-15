@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0ea5e9">
+<title>Five Little Ducks · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #bae6fd 30%, #7dd3fc 70%, #0284c7 100%);
+  color: #075985;
+}
+.back-home-btn{ color:#075985; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.sun{
+  position:absolute; top:11vh; right:8vw;
+  font-size: clamp(50px, 12vw, 80px);
+  filter: drop-shadow(0 0 25px #fde047);
+  animation: heroFloat 3s ease-in-out infinite;
+}
+.lily{
+  position:absolute; pointer-events:none; opacity:0.7;
+  font-size: clamp(28px,6vw,40px);
+  animation: heroFloat 4s ease-in-out infinite;
+}
+.lily.l1{ bottom: 30vh; left: 5vw; }
+.lily.l2{ bottom: 22vh; right: 25vw; animation-delay: -2s; }
+.lily.l3{ bottom: 38vh; left: 35vw; animation-delay: -1s; }
+
+/* mama duck on the left bank */
+.mama{
+  position: absolute; bottom: 28vh; left: 4vw;
+  z-index: 5;
+  font-size: clamp(72px, 17vw, 110px);
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
+  animation: mamaIdle 2.4s ease-in-out infinite;
+}
+@keyframes mamaIdle{ 0%,100%{ transform: rotate(-3deg) } 50%{ transform: rotate(3deg) } }
+.mama.cheer{ animation: mamaCheer 0.7s var(--bounce); }
+@keyframes mamaCheer{
+  0%{ transform: rotate(0); } 30%{ transform: scale(1.2) rotate(-10deg); }
+  60%{ transform: scale(1.1) rotate(10deg); } 100%{ transform: scale(1); }
+}
+
+/* family count under mama */
+.family-count{
+  position: fixed; bottom: 2vh; left: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 4px solid #075985; border-radius: 24px;
+  padding: 8px 14px;
+  font-size: 14px; font-weight: 900; color:#075985;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.family-count-num{ font-size: 20px; -webkit-text-stroke: 1.5px #fff; color:#0284c7; }
+
+/* pond water area */
+.pond{
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 50vh; z-index: 2;
+  background: linear-gradient(180deg, rgba(2,132,199,0.2) 0%, rgba(7,89,133,0.7) 100%);
+  box-shadow: inset 0 6px 12px rgba(255,255,255,0.4);
+  overflow: hidden;
+}
+
+/* ducklings — bobbing on the pond */
+.duckling{
+  position: absolute; cursor: pointer; touch-action: manipulation;
+  width: clamp(78px, 18vw, 110px); height: clamp(78px, 18vw, 110px);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+  animation: bobble 2.6s ease-in-out infinite;
+}
+@keyframes bobble{ 0%,100%{ transform: translateY(0) rotate(-3deg) } 50%{ transform: translateY(-8px) rotate(3deg) } }
+.duckling:active{ transform: scale(0.92); }
+.duckling-body{
+  position:absolute; inset: 0;
+  background: radial-gradient(circle at 35% 30%, #fef9c3, #facc15);
+  border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25), inset -8px -8px 14px rgba(0,0,0,0.15);
+}
+.duckling-body::after{
+  content:''; position:absolute; top: 38%; left: 35%;
+  width: 14px; height: 14px; background:#1e293b; border-radius: 50%;
+}
+.duckling-body::before{
+  content:''; position:absolute; top: 50%; left: 16%;
+  width: 18px; height: 12px;
+  background: #f97316; border-radius: 50%;
+}
+.duckling-num{
+  position: relative; z-index: 3;
+  font-size: clamp(28px, 7vw, 44px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+  margin-top: 8%;
+  margin-left: 14%;
+}
+.duckling.swim-home{ pointer-events: none; animation: none; transition: transform 1.1s cubic-bezier(0.45,0.05,0.55,0.95); }
+.duckling.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* family lineup ducklings — small versions next to mama */
+.family-row{
+  position: absolute; bottom: 26vh; left: 4vw;
+  z-index: 4; pointer-events: none;
+  display: flex; align-items: flex-end; gap: 4px;
+  height: 36px;
+}
+.family-mini{
+  font-size: clamp(28px, 7vw, 42px);
+  animation: bobble 2.4s ease-in-out infinite;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #075985; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#075985; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">FIVE LITTLE DUCKS</div>
+    <div class="title-hero">🦆</div>
+    <div class="title-sub">Help the ducklings swim home to mama!</div>
+    <button class="start-btn" id="btnStart">🦆 Start Quacking</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Duckling</span>
+    <span class="hud-target" id="hudTarget">12</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="sun">☀️</div>
+  <div class="lily l1">🪷</div>
+  <div class="lily l2">🪷</div>
+  <div class="lily l3">🪷</div>
+
+  <div class="pond" id="pond"></div>
+  <div class="mama" id="mama">🦆</div>
+  <div class="family-row" id="familyRow"></div>
+
+  <div class="family-count">
+    🦆 <span class="family-count-num" id="familyCount">0</span> home
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">FAMILY REUNITED!</div>
+    <div class="title-hero">🦆</div>
+    <div class="celeb-count" id="celebCount">All ducklings home!</div>
+    <button class="start-btn" id="btnAgain">🦆 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [10,11,12,13,14,15];
+
+const ROUNDS = [
+  { prompts: 4 }, { prompts: 4 }, { prompts: 4 }, { prompts: 4 }
+];
+
+let roundIdx = 0, promptIdx = 0, home = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let duckEls = [];
+let busy = false;
+
+function spawnDucklings(){
+  const pond = $('pond');
+  pond.innerHTML = '';
+  duckEls = [];
+  const w = pond.clientWidth || innerWidth;
+  const h = pond.clientHeight || (innerHeight*0.5);
+  // 3 cols x 2 rows scattered on the pond, biased right of mama
+  const cols = 3, rows = 2;
+  const colW = (w - 100) / cols;
+  const rowH = (h - 80) / rows;
+  const positions = [];
+  for(let r = 0; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      positions.push({
+        x: 90 + colW * c + (Math.random() - 0.5) * colW * 0.3,
+        y: 30 + rowH * r + (Math.random() - 0.5) * rowH * 0.25
+      });
+    }
+  }
+  shuffle(NUMS).forEach((n, i) => {
+    const d = document.createElement('div');
+    d.className = 'duckling';
+    d.dataset.n = n;
+    d.innerHTML = `<div class="duckling-body"></div><div class="duckling-num">${n}</div>`;
+    d.style.left = positions[i].x + 'px';
+    d.style.top  = positions[i].y + 'px';
+    d.style.animationDelay = (-Math.random()*2.6) + 's';
+    onTap(d, () => handleDuckTap(d, n));
+    pond.appendChild(d);
+    duckEls.push(d);
+  });
+}
+
+function handleDuckTap(el, n){
+  if(busy || el.classList.contains('swim-home')) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('swim-home');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    // Calculate swim path: duckling glides from its current pond pos to mama
+    const rect = el.getBoundingClientRect();
+    const mamaR = $('mama').getBoundingClientRect();
+    const dx = (mamaR.left + mamaR.width/2) - (rect.left + rect.width/2);
+    const dy = (mamaR.top + mamaR.height/2) - (rect.top + rect.height/2);
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(0.5) rotate(-10deg)`;
+    el.style.opacity = '0.3';
+    setTimeout(() => {
+      el.remove();
+      home++;
+      $('familyCount').textContent = home;
+      addToFamily();
+      $('mama').classList.add('cheer');
+      setTimeout(() => $('mama').classList.remove('cheer'), 700);
+      starBurst(mamaR.left + mamaR.width/2, mamaR.top + mamaR.height/2);
+      burstConfetti(mamaR.left + mamaR.width/2, mamaR.top + mamaR.height/2, 12);
+      promptIdx++;
+      busy = false;
+      setTimeout(nextPrompt, 350);
+    }, 1100);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function addToFamily(){
+  const row = $('familyRow');
+  // shift the row out to the right of mama (max 16 mini ducks)
+  const mini = document.createElement('span');
+  mini.className = 'family-mini';
+  mini.textContent = '🐤';
+  mini.style.animationDelay = (-Math.random()*2.4) + 's';
+  row.appendChild(mini);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnDucklings();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    duckEls.forEach(d => {
+      if(Number(d.dataset.n) === currentTarget && !d.classList.contains('swim-home')){
+        d.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${home} ducklings home with mama!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; home = 0;
+  $('familyCount').textContent = '0';
+  $('familyRow').innerHTML = '';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#d97706">
+<title>Beach Sandcastle · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #67e8f9 0%, #38bdf8 25%, #fde68a 55%, #fbbf24 100%);
+  color: #78350f;
+}
+.back-home-btn{ color:#78350f; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.sun{
+  position: absolute; top: 11vh; right: 8vw;
+  font-size: clamp(50px, 12vw, 80px);
+  filter: drop-shadow(0 0 25px #fde047);
+  animation: heroFloat 3s ease-in-out infinite;
+}
+.seagull{
+  position: absolute; pointer-events: none;
+  font-size: clamp(24px, 5vw, 36px);
+  opacity: 0.8;
+  animation: gullFly 14s linear infinite;
+}
+@keyframes gullFly{
+  0%   { transform: translateX(-50px) translateY(0); }
+  50%  { transform: translateX(50vw) translateY(-12px); }
+  100% { transform: translateX(110vw) translateY(0); }
+}
+.shell{
+  position: absolute; pointer-events: none;
+  font-size: clamp(20px, 5vw, 28px);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+}
+.shell.s1{ bottom: 12vh; left: 6vw; }
+.shell.s2{ bottom: 8vh; right: 8vw; }
+
+/* the growing sandcastle in the center */
+.castle-stage{
+  position: absolute; bottom: 24vh; left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: clamp(160px, 38vw, 240px);
+  height: clamp(180px, 42vw, 280px);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.castle-base{
+  position: absolute; bottom: 0;
+  width: 100%; height: 18%;
+  background: linear-gradient(180deg, #fde68a 0%, #f59e0b 100%);
+  border: 4px solid #92400e; border-radius: 6px;
+  transform-origin: bottom; transform: scaleY(0);
+  transition: transform 0.5s var(--bounce);
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.2);
+}
+.castle-walls{
+  position: absolute; bottom: 18%;
+  width: 78%; height: 32%;
+  background: linear-gradient(180deg, #fde68a 0%, #f59e0b 100%);
+  border: 4px solid #92400e; border-radius: 6px 6px 0 0;
+  transform-origin: bottom; transform: scaleY(0);
+  transition: transform 0.5s var(--bounce);
+}
+.castle-walls::before{
+  content:''; position: absolute; top: -10px; left: 0; right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, #92400e 0 12px, transparent 12px 24px);
+}
+.castle-tower-l, .castle-tower-r{
+  position: absolute; bottom: 18%;
+  width: 22%; height: 50%;
+  background: linear-gradient(180deg, #fde68a 0%, #f59e0b 100%);
+  border: 4px solid #92400e; border-radius: 6px 6px 0 0;
+  transform-origin: bottom; transform: scaleY(0);
+  transition: transform 0.5s var(--bounce);
+}
+.castle-tower-l{ left: 0; }
+.castle-tower-r{ right: 0; }
+.castle-tower-l::before, .castle-tower-r::before{
+  content:''; position: absolute; top: -10px; left: 0; right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, #92400e 0 8px, transparent 8px 16px);
+}
+
+.castle-stage.s1 .castle-base{ transform: scaleY(0.4); }
+.castle-stage.s2 .castle-base{ transform: scaleY(0.7); }
+.castle-stage.s3 .castle-base{ transform: scaleY(1); }
+.castle-stage.s4 .castle-base{ transform: scaleY(1); }
+
+.castle-stage.s5 .castle-base{ transform: scaleY(1); }
+.castle-stage.s5 .castle-walls{ transform: scaleY(0.4); }
+.castle-stage.s6 .castle-walls{ transform: scaleY(0.7); }
+.castle-stage.s7 .castle-walls{ transform: scaleY(1); }
+.castle-stage.s8 .castle-walls{ transform: scaleY(1); }
+
+.castle-stage.s9  .castle-tower-l{ transform: scaleY(0.4); }
+.castle-stage.s10 .castle-tower-l{ transform: scaleY(0.8); }
+.castle-stage.s11 .castle-tower-l{ transform: scaleY(1); }
+.castle-stage.s12 .castle-tower-l{ transform: scaleY(1); }
+
+.castle-stage.s13 .castle-tower-r{ transform: scaleY(0.5); }
+.castle-stage.s14 .castle-tower-r{ transform: scaleY(1); }
+
+/* keep all earlier stages applied after step 4/8/12 */
+.castle-stage.s5  .castle-base, .castle-stage.s6 .castle-base,
+.castle-stage.s7  .castle-base, .castle-stage.s8 .castle-base,
+.castle-stage.s9  .castle-base, .castle-stage.s10 .castle-base,
+.castle-stage.s11 .castle-base, .castle-stage.s12 .castle-base,
+.castle-stage.s13 .castle-base, .castle-stage.s14 .castle-base,
+.castle-stage.s15 .castle-base, .castle-stage.s16 .castle-base{ transform: scaleY(1); }
+.castle-stage.s9  .castle-walls, .castle-stage.s10 .castle-walls,
+.castle-stage.s11 .castle-walls, .castle-stage.s12 .castle-walls,
+.castle-stage.s13 .castle-walls, .castle-stage.s14 .castle-walls,
+.castle-stage.s15 .castle-walls, .castle-stage.s16 .castle-walls{ transform: scaleY(1); }
+.castle-stage.s13 .castle-tower-l, .castle-stage.s14 .castle-tower-l,
+.castle-stage.s15 .castle-tower-l, .castle-stage.s16 .castle-tower-l{ transform: scaleY(1); }
+.castle-stage.s15 .castle-tower-r{ transform: scaleY(0.6); }
+.castle-stage.s16 .castle-tower-r{ transform: scaleY(1); }
+
+.castle-flag{
+  position: absolute; bottom: 70%; left: 50%; transform: translate(-50%, 0) scale(0);
+  font-size: clamp(28px, 7vw, 40px); z-index: 2;
+  transition: transform 0.6s var(--bounce);
+  filter: drop-shadow(0 0 8px #fde047);
+}
+.castle-stage.s16 .castle-flag{ transform: translate(-50%, 0) scale(1); animation: flagWave 1s ease-in-out infinite alternate; }
+@keyframes flagWave{ 0%{ transform: translate(-50%, 0) scale(1) rotate(-8deg) } 100%{ transform: translate(-50%, 0) scale(1) rotate(8deg) } }
+
+/* sand pour effect */
+.sand-stream{
+  position: fixed; pointer-events: none; z-index: 200;
+  font-size: clamp(20px, 5vw, 30px);
+}
+
+/* bucket pool */
+.pool-label{
+  position: fixed;
+  bottom: calc(2vh + clamp(80px, 18vw, 130px));
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #78350f; border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 900; color:#78350f;
+  letter-spacing: 1px;
+}
+.pool{
+  position: fixed; bottom: 2vh; left: 0; right: 0;
+  z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 2vw, 14px);
+  padding: 0 clamp(8px, 3vw, 18px);
+}
+.bk{
+  position: relative;
+  width: clamp(72px, 16vw, 110px);
+  aspect-ratio: 4 / 3;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.bk:active{ transform: scale(0.92); }
+.bk-body{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #422006;
+  border-radius: 12px 12px 30% 30% / 12px 12px 70% 70%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.bk-body::before{
+  content:''; position: absolute; top: -10px; left: -8%; right: -8%;
+  height: 10px; background: var(--c2); border: 4px solid #422006;
+  border-radius: 999px; border-bottom: none;
+}
+.bk-num{
+  font-size: clamp(28px, 7vw, 42px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+}
+.bk.wobble{ animation: wobble 0.5s ease-in-out; }
+.bk.pouring{ pointer-events: none; }
+
+.bc1{ --c1:#fca5a5; --c2:#dc2626; }
+.bc2{ --c1:#fde047; --c2:#d97706; }
+.bc3{ --c1:#93c5fd; --c2:#2563eb; }
+.bc4{ --c1:#86efac; --c2:#16a34a; }
+.bc5{ --c1:#fbcfe8; --c2:#db2777; }
+.bc6{ --c1:#c4b5fd; --c2:#7c3aed; }
+
+/* flying bucket clone for the pour animation */
+.flying-bk{
+  position: fixed;
+  z-index: 200; pointer-events: none;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #78350f; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#78350f;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #78350f; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#78350f; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">SANDCASTLE</div>
+    <div class="title-hero">🏖️</div>
+    <div class="title-sub">Pour buckets · Build the castle!</div>
+    <button class="start-btn" id="btnStart">🪣 Start Building</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Pour bucket</span>
+    <span class="hud-target" id="hudTarget">17</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="sun">☀️</div>
+  <div class="seagull" style="top: 16vh;">🕊️</div>
+  <div class="shell s1">🐚</div>
+  <div class="shell s2">⭐</div>
+
+  <div class="castle-stage" id="castleStage">
+    <div class="castle-flag">🚩</div>
+    <div class="castle-tower-l"></div>
+    <div class="castle-tower-r"></div>
+    <div class="castle-walls"></div>
+    <div class="castle-base"></div>
+  </div>
+
+  <div class="progress-pill">🏰 <span id="progress">0</span> / 16</div>
+  <div class="pool-label">BUCKET PILE</div>
+  <div class="pool" id="pool"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">CASTLE BUILT!</div>
+    <div class="title-hero">🏰</div>
+    <div class="celeb-count" id="celebCount">Magnificent sandcastle!</div>
+    <button class="start-btn" id="btnAgain">🪣 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const FULL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+const COLORS = ['bc1','bc2','bc3','bc4','bc5','bc6'];
+
+let roundIdx = 0, promptIdx = 0, poured = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let poolEls = [];
+let busy = false;
+
+function spawnPool(){
+  const pool = $('pool');
+  pool.innerHTML = '';
+  poolEls = [];
+  let nums = shuffle(FULL).slice(0, 6);
+  if(!nums.includes(currentTarget)){
+    nums[Math.floor(Math.random()*nums.length)] = currentTarget;
+  }
+  nums = shuffle(nums);
+  const colors = shuffle(COLORS);
+  nums.forEach((n, i) => {
+    const bk = document.createElement('div');
+    bk.className = 'bk';
+    bk.dataset.n = n;
+    bk.dataset.color = colors[i % colors.length];
+    bk.innerHTML = `<div class="bk-body ${colors[i % colors.length]}"><span class="bk-num">${n}</span></div>`;
+    onTap(bk, () => handleBucketTap(bk, n));
+    pool.appendChild(bk);
+    poolEls.push(bk);
+  });
+}
+
+function handleBucketTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('pouring');
+    audio.tone('whoosh');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    pourBucket(el, n);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function pourBucket(el, n){
+  const sR = el.getBoundingClientRect();
+  const castleR = $('castleStage').getBoundingClientRect();
+  const tx = castleR.left + castleR.width/2;
+  const ty = castleR.top  + castleR.height*0.2;
+  const color = el.dataset.color;
+  const fly = document.createElement('div');
+  fly.className = 'flying-bk';
+  fly.style.left = '0'; fly.style.top = '0';
+  fly.style.width  = sR.width + 'px';
+  fly.style.height = sR.height + 'px';
+  fly.innerHTML = `<div class="bk-body ${color}" style="border:4px solid #422006;border-radius:12px 12px 30% 30%/12px 12px 70% 70%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:${parseInt(sR.height*0.4)}px;color:#fff;-webkit-text-stroke:2px rgba(0,0,0,0.45);font-weight:900;text-shadow:2px 2px 0 rgba(0,0,0,0.4);background:linear-gradient(180deg,var(--c1),var(--c2));">${n}</div>`;
+  fly.style.transform = `translate(${sR.left}px, ${sR.top}px)`;
+  document.body.appendChild(fly);
+  // Arc from pool up over the castle, then tip + pour
+  const peakX = (sR.left + tx) / 2;
+  const peakY = Math.min(sR.top, ty) - 80;
+  fly.animate(
+    [
+      { transform: `translate(${sR.left}px, ${sR.top}px) rotate(0deg)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) rotate(-30deg)`, offset: 0.55 },
+      { transform: `translate(${tx - sR.width/2}px, ${ty}px) rotate(-130deg)`, offset: 1 }
+    ],
+    { duration: 800, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => sprinkleSand(tx, ty + 30), 750);
+  setTimeout(() => {
+    fly.remove();
+    poured++;
+    $('progress').textContent = poured;
+    $('castleStage').classList.remove('s' + (poured-1));
+    $('castleStage').classList.add('s' + poured);
+    // also keep any prior class applied (we use the CSS rules above to keep base/walls/towers shown)
+    audio.tone('sparkle');
+    starBurst(tx, ty);
+    burstConfetti(tx, ty, 10);
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(poured >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 500);
+  }, 1000);
+}
+
+function sprinkleSand(x, y){
+  for(let i = 0; i < 14; i++){
+    const grain = document.createElement('div');
+    grain.className = 'sand-stream';
+    grain.textContent = '·';
+    grain.style.left = '0';
+    grain.style.top = '0';
+    grain.style.color = '#f59e0b';
+    grain.style.fontWeight = '900';
+    grain.style.transform = `translate(${x + (Math.random()-0.5)*40}px, ${y}px)`;
+    document.body.appendChild(grain);
+    const dx = (Math.random()-0.5) * 60;
+    const dy = 40 + Math.random()*30;
+    grain.animate(
+      [
+        { transform: `translate(${x + (Math.random()-0.5)*40}px, ${y}px) scale(1)`, opacity: 1 },
+        { transform: `translate(${x + dx}px, ${y + dy}px) scale(0.5)`, opacity: 0 }
+      ],
+      { duration: 600 + Math.random()*200, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+    );
+    setTimeout(() => grain.remove(), 900);
+  }
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnPool();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    poolEls.forEach(b => {
+      if(Number(b.dataset.n) === currentTarget){
+        b.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(FULL).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1), 'Any number 0–20');
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  clearTimeout(hintTimer);
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*250);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${poured} buckets poured!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; poured = 0;
+  $('progress').textContent = '0';
+  const stage = $('castleStage');
+  stage.className = 'castle-stage';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

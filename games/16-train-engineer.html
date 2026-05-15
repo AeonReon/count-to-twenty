@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#b91c1c">
+<title>Train Engineer · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 30%, #fda4af 70%, #be123c 100%);
+  color: #7f1d1d;
+}
+.back-home-btn{ color:#7f1d1d; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.cloud{
+  position: absolute; pointer-events: none; opacity: 0.7;
+  font-size: clamp(34px, 8vw, 56px);
+  animation: cloudDrift linear infinite;
+}
+@keyframes cloudDrift{ from{ transform: translateX(-150px) } to { transform: translateX(110vw) } }
+
+.station-sign{
+  position: absolute; top: 12vh; left: 50%;
+  transform: translateX(-50%); z-index: 5;
+  background: #fff; color: #7f1d1d;
+  border: 4px solid #7f1d1d; border-radius: 14px;
+  padding: 8px 18px;
+  font-size: clamp(14px, 3.5vw, 20px); font-weight: 900;
+  letter-spacing: 2px;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.25);
+}
+
+/* engineer character bouncing */
+.engineer{
+  position: absolute; top: 18vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(50px, 12vw, 80px); z-index: 5;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+  animation: heroFloat 2.6s ease-in-out infinite;
+}
+.engineer.cheer{ animation: cheer 0.7s var(--bounce); }
+@keyframes cheer{
+  0%{ transform: translateX(-50%) scale(1); }
+  30%{ transform: translateX(-50%) scale(1.2) rotate(-10deg); }
+  60%{ transform: translateX(-50%) scale(1.1) rotate(10deg); }
+  100%{ transform: translateX(-50%) scale(1); }
+}
+
+/* the train track */
+.track{
+  position: absolute; bottom: 32vh; left: 0; right: 0;
+  height: 18px; z-index: 2;
+  background: repeating-linear-gradient(90deg, #422006 0 12px, transparent 12px 22px),
+              linear-gradient(180deg, #78350f 0%, #422006 100%);
+  border-top: 4px solid #fbbf24;
+  border-bottom: 4px solid #422006;
+}
+
+/* the engine + coupled carriages, scrolling left as more are added */
+.train-row{
+  position: absolute; bottom: calc(32vh + 14px); left: 4vw;
+  z-index: 4; pointer-events: none;
+  display: flex; align-items: flex-end; gap: 4px;
+  transition: transform 0.7s cubic-bezier(0.34,1.56,0.64,1);
+}
+.engine{
+  width: clamp(80px, 18vw, 120px);
+  height: clamp(70px, 16vw, 100px);
+  background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+  border: 4px solid #422006; border-radius: 14px 4px 6px 6px;
+  position: relative;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+.engine::before{
+  content:''; position: absolute; top: -16px; left: 30%;
+  width: 18px; height: 22px;
+  background: linear-gradient(180deg, #1f2937, #111827);
+  border: 3px solid #422006; border-radius: 6px 6px 2px 2px;
+}
+.engine::after{
+  content: '🚂'; position: absolute; top: 8px; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(28px, 7vw, 44px);
+}
+.engine .wheel{
+  position: absolute; bottom: -10px;
+  width: 24px; height: 24px;
+  background: radial-gradient(circle, #1e293b 30%, #475569 60%, #1e293b 100%);
+  border: 3px solid #422006; border-radius: 50%;
+}
+.engine .wheel.w1{ left: 8%; }
+.engine .wheel.w2{ left: 38%; }
+.engine .wheel.w3{ left: 68%; }
+.engine.chug{ animation: chug 0.3s ease-in-out infinite; }
+@keyframes chug{ 0%,100%{ transform: translateX(0) } 50%{ transform: translateX(-2px) } }
+
+.smoke{
+  position: absolute; pointer-events: none;
+  font-size: clamp(16px, 4vw, 22px);
+  animation: smokeRise 1.6s ease-out infinite;
+}
+@keyframes smokeRise{
+  0%   { transform: translateY(0) scale(0.6); opacity: 0; }
+  20%  { opacity: 0.9; }
+  100% { transform: translateY(-50px) scale(1.4); opacity: 0; }
+}
+
+/* a coupled carriage in the train row (after being added) */
+.carriage-coupled{
+  width: clamp(60px, 14vw, 90px);
+  height: clamp(54px, 12vw, 78px);
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #422006; border-radius: 8px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(22px, 5.5vw, 34px); color:#fff;
+  -webkit-text-stroke: 1.8px rgba(0,0,0,0.4);
+  text-shadow: 1px 2px 0 rgba(0,0,0,0.3); font-weight: 900;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  animation: hookOn 0.6s var(--bounce);
+}
+@keyframes hookOn{
+  0%   { transform: translateX(40px) rotate(-8deg); opacity: 0; }
+  60%  { transform: translateX(-8px) rotate(2deg); opacity: 1; }
+  100% { transform: translateX(0) rotate(0); }
+}
+.carriage-coupled::before, .carriage-coupled::after{
+  content:''; position: absolute; bottom: -10px;
+  width: 18px; height: 18px;
+  background: radial-gradient(circle, #1e293b 30%, #475569 60%, #1e293b 100%);
+  border: 3px solid #422006; border-radius: 50%;
+}
+.carriage-coupled::before{ left: 12%; }
+.carriage-coupled::after { right: 12%; }
+
+/* carriage pool at the bottom — what kid taps */
+.pool-label{
+  position: fixed;
+  bottom: calc(2vh + clamp(80px, 18vw, 130px));
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #7f1d1d; border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 900; color:#7f1d1d;
+  letter-spacing: 1px;
+}
+.pool{
+  position: fixed; bottom: 2vh; left: 0; right: 0;
+  z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 2vw, 14px);
+  padding: 0 clamp(8px, 3vw, 18px);
+}
+.car{
+  position: relative;
+  width: clamp(78px, 17vw, 110px);
+  height: clamp(70px, 15vw, 96px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.car:active{ transform: scale(0.92); }
+.car-body{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #422006; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+.car-body::before, .car-body::after{
+  content:''; position: absolute; bottom: -10px;
+  width: 18px; height: 18px;
+  background: radial-gradient(circle, #1e293b 30%, #475569 60%, #1e293b 100%);
+  border: 3px solid #422006; border-radius: 50%;
+}
+.car-body::before{ left: 12%; }
+.car-body::after { right: 12%; }
+.car-num{
+  font-size: clamp(30px, 7vw, 46px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+}
+.car.wobble{ animation: wobble 0.5s ease-in-out; }
+.car.flying{ pointer-events: none; }
+
+.cc1{ --c1:#fde047; --c2:#d97706; }
+.cc2{ --c1:#86efac; --c2:#16a34a; }
+.cc3{ --c1:#93c5fd; --c2:#2563eb; }
+.cc4{ --c1:#fbcfe8; --c2:#db2777; }
+.cc5{ --c1:#c4b5fd; --c2:#7c3aed; }
+.cc6{ --c1:#fca5a5; --c2:#dc2626; }
+
+/* flying car clone */
+.flying-car{
+  position: fixed;
+  border: 4px solid #422006; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 7vw, 44px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  font-weight: 900;
+  z-index: 200; pointer-events: none;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #7f1d1d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#7f1d1d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #7f1d1d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#7f1d1d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">TRAIN ENGINEER</div>
+    <div class="title-hero">🚂</div>
+    <div class="title-sub">Couple the carriages · Build the train!</div>
+    <button class="start-btn" id="btnStart">🚂 All Aboard</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Couple</span>
+    <span class="hud-target" id="hudTarget">18</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="station-sign">CHOO-CHOO STATION</div>
+  <div class="engineer" id="engineer">👷‍♂️</div>
+  <div class="track"></div>
+
+  <div class="train-row" id="train">
+    <div class="engine" id="engine">
+      <div class="wheel w1"></div>
+      <div class="wheel w2"></div>
+      <div class="wheel w3"></div>
+    </div>
+  </div>
+
+  <div class="progress-pill">🚃 <span id="progress">0</span> / 16</div>
+  <div class="pool-label">CARRIAGE YARD</div>
+  <div class="pool" id="pool"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">CHOO-CHOO!</div>
+    <div class="title-hero">🚂</div>
+    <div class="celeb-count" id="celebCount">Train all coupled!</div>
+    <button class="start-btn" id="btnAgain">🚂 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [15,16,17,18,19,20];
+const CC_CLASSES = ['cc1','cc2','cc3','cc4','cc5','cc6'];
+
+let roundIdx = 0, promptIdx = 0, coupled = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let poolEls = [];
+let busy = false;
+let smokeTimer = null;
+
+function spawnPool(){
+  const pool = $('pool');
+  pool.innerHTML = '';
+  poolEls = [];
+  const colors = shuffle(CC_CLASSES);
+  shuffle(NUMS).forEach((n, i) => {
+    const car = document.createElement('div');
+    car.className = 'car';
+    car.dataset.n = n;
+    car.dataset.color = colors[i % colors.length];
+    car.innerHTML = `<div class="car-body ${colors[i % colors.length]}"><span class="car-num">${n}</span></div>`;
+    onTap(car, () => handleCarTap(car, n));
+    pool.appendChild(car);
+    poolEls.push(car);
+  });
+}
+
+function handleCarTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('flying');
+    audio.tone('whoosh');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    // fly carriage from pool to the end of the train row
+    flyCarToTrain(el, n);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function flyCarToTrain(el, n){
+  const sR = el.getBoundingClientRect();
+  // target: just to the right of the last carriage in the train row
+  const trainRow = $('train');
+  const last = trainRow.lastElementChild;
+  const lR = last.getBoundingClientRect();
+  const tx = lR.right + 6;
+  const ty = lR.top;
+  const color = el.dataset.color;
+  const fly = document.createElement('div');
+  fly.className = 'flying-car ' + color;
+  fly.style.background = `linear-gradient(180deg, var(--c1), var(--c2))`;
+  fly.style.left = '0'; fly.style.top = '0';
+  fly.style.width  = sR.width + 'px';
+  fly.style.height = sR.height + 'px';
+  fly.textContent = n;
+  fly.style.transform = `translate(${sR.left}px, ${sR.top}px)`;
+  document.body.appendChild(fly);
+  // arc from pool up to the train track
+  const peakX = (sR.left + tx) / 2;
+  const peakY = Math.min(sR.top, ty) - 50;
+  fly.animate(
+    [
+      { transform: `translate(${sR.left}px, ${sR.top}px) scale(1) rotate(0)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) scale(1) rotate(-12deg)`, offset: 0.55 },
+      { transform: `translate(${tx}px, ${ty}px) scale(0.85) rotate(0deg)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 700, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    fly.remove();
+    coupleCarToTrain(n, color);
+    coupled++;
+    $('progress').textContent = coupled;
+    $('engineer').classList.add('cheer');
+    setTimeout(() => $('engineer').classList.remove('cheer'), 700);
+    audio.tone('ding');
+    starBurst(tx, ty);
+    burstConfetti(tx, ty, 12);
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(coupled >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 600);
+  }, 720);
+}
+
+function coupleCarToTrain(n, color){
+  const trainRow = $('train');
+  const car = document.createElement('div');
+  car.className = 'carriage-coupled ' + color;
+  car.textContent = n;
+  trainRow.appendChild(car);
+  // shift the train left as it grows so the engine stays roughly on screen
+  const shift = Math.min(0, -(coupled - 2) * 38);
+  trainRow.style.transform = `translateX(${shift}px)`;
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnPool();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    poolEls.forEach(p => {
+      if(Number(p.dataset.n) === currentTarget){
+        p.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  // chug the train off!
+  clearTimeout(hintTimer);
+  $('engine').classList.add('chug');
+  const train = $('train');
+  train.style.transition = 'transform 3s cubic-bezier(0.45,0.05,0.55,0.95)';
+  train.style.transform = 'translateX(120vw)';
+  audio.tone('whoosh');
+  // smoke puffs
+  startSmoke();
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 26), 800 + i*250);
+  }
+  setTimeout(showCeleb, 3200);
+}
+
+function startSmoke(){
+  if(smokeTimer) clearInterval(smokeTimer);
+  smokeTimer = setInterval(() => {
+    if(!$('scrGame').classList.contains('active')){ clearInterval(smokeTimer); return; }
+    const eR = $('engine').getBoundingClientRect();
+    if(eR.right < 0) { clearInterval(smokeTimer); return; }
+    const s = document.createElement('div');
+    s.className = 'smoke'; s.textContent = '💨';
+    s.style.left = (eR.left + eR.width*0.4) + 'px';
+    s.style.top  = (eR.top - 10) + 'px';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1700);
+  }, 220);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${coupled} carriages coupled!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; coupled = 0;
+  $('progress').textContent = '0';
+  // reset train
+  const train = $('train');
+  train.style.transition = '';
+  train.style.transform = 'translateX(0)';
+  // clear coupled carriages (keep engine)
+  [...train.querySelectorAll('.carriage-coupled')].forEach(c => c.remove());
+  $('engine').classList.remove('chug');
+  if(smokeTimer){ clearInterval(smokeTimer); smokeTimer = null; }
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+(function(){
+  for(let i = 0; i < 4; i++){
+    const c = document.createElement('div');
+    c.className = 'cloud';
+    c.textContent = pick(['☁️','⛅']);
+    c.style.top = (4 + Math.random()*20) + 'vh';
+    c.style.animationDuration = (40 + Math.random()*30) + 's';
+    c.style.animationDelay = (-Math.random()*60) + 's';
+    document.body.appendChild(c);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

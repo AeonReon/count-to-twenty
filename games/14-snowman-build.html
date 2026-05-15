@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0ea5e9">
+<title>Snowman Build · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #cffafe 0%, #bfdbfe 30%, #dbeafe 60%, #e0e7ff 100%);
+  color: #1e3a8a;
+}
+.back-home-btn{ color:#1e3a8a; border-color:#a5b4fc; }
+.home-bubble{ border-color:#a5b4fc; }
+
+.snowflake{
+  position: absolute; pointer-events: none; color: #fff;
+  font-size: clamp(14px, 3vw, 22px);
+  animation: snowFall var(--dur,8s) linear infinite var(--delay,0s);
+  opacity: 0.85;
+}
+@keyframes snowFall{
+  0%   { transform: translateY(-30px) rotate(0); opacity: 0; }
+  10%  { opacity: 0.9; }
+  100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+}
+
+/* snowy hill base */
+.hill{
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 20vh; z-index: 1;
+  background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%);
+  border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+  box-shadow: inset 0 6px 14px rgba(255,255,255,0.6);
+}
+.tree{
+  position: absolute; bottom: 14vh; font-size: clamp(40px, 10vw, 70px);
+  pointer-events: none; opacity: 0.8;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+.tree.l{ left: 6vw; }
+.tree.r{ right: 6vw; transform: scaleX(-1); }
+
+/* the snowman, centered. each part has a fill meter (size 0-4) */
+.snowman-wrap{
+  position: absolute; bottom: 15vh; left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: clamp(180px, 42vw, 280px);
+  height: clamp(280px, 60vh, 420px);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+}
+.snow-part{
+  position: relative;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #e2e8f0 70%, #cbd5e1 100%);
+  border: 3px solid #cbd5e1;
+  border-radius: 50%;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2), inset -10px -10px 20px rgba(0,0,0,0.07);
+  transition: transform 0.5s var(--bounce), opacity 0.4s;
+  transform: scale(0);
+  margin-top: -10px;
+}
+.snow-part.f1{ transform: scale(0.35); }
+.snow-part.f2{ transform: scale(0.55); }
+.snow-part.f3{ transform: scale(0.80); }
+.snow-part.f4{ transform: scale(1.0); }
+.part-bottom{ width: 100%; height: 38%; }
+.part-middle{ width: 75%; height: 30%; }
+.part-head  { width: 56%; height: 25%; position: relative; overflow: visible; }
+
+/* face details (visible at f4 of head) */
+.face-eye{
+  position: absolute; top: 35%;
+  width: 13px; height: 13px;
+  background: #1e293b; border-radius: 50%;
+  opacity: 0; transition: opacity 0.4s;
+  box-shadow: 0 0 8px rgba(0,0,0,0.4);
+}
+.face-eye.l{ left: 28%; }
+.face-eye.r{ right: 28%; }
+.part-head.show-eyes .face-eye{ opacity: 1; }
+.face-nose{
+  position: absolute; top: 45%; left: 50%; transform: translateX(-50%);
+  font-size: clamp(20px, 5vw, 32px);
+  opacity: 0; transition: opacity 0.4s;
+}
+.part-head.show-nose .face-nose{ opacity: 1; }
+.face-mouth{
+  position: absolute; bottom: 14%; left: 50%; transform: translateX(-50%);
+  font-size: clamp(16px, 4vw, 24px); letter-spacing: 4px;
+  color: #475569;
+  opacity: 0; transition: opacity 0.4s;
+}
+.part-head.show-mouth .face-mouth{ opacity: 1; }
+
+/* hat appears above head at the very end */
+.hat{
+  position: absolute; bottom: 96%; left: 50%; transform: translate(-50%, 0) scale(0);
+  font-size: clamp(40px, 10vw, 64px);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+  transition: transform 0.5s var(--bounce);
+  z-index: 5;
+}
+.part-head.show-hat .hat{ transform: translate(-50%, 0) scale(1); }
+
+/* arms — stick out from middle */
+.arm{
+  position: absolute; top: 30%;
+  width: clamp(40px, 9vw, 56px); height: 4px;
+  background: #92400e; transform-origin: center;
+  opacity: 0; transition: opacity 0.4s;
+}
+.arm.l{ left: -10%; transform: rotate(-25deg); }
+.arm.r{ right: -10%; transform: rotate(25deg); }
+.part-middle.show-arms .arm{ opacity: 1; }
+
+/* scarf — appears at very end */
+.scarf{
+  position: absolute; bottom: 90%; left: 50%; transform: translateX(-50%);
+  width: 110%; height: 14px;
+  background: repeating-linear-gradient(90deg, #dc2626 0 12px, #fbbf24 12px 24px);
+  border: 2px solid #1e293b; border-radius: 4px;
+  opacity: 0; transition: opacity 0.4s;
+  z-index: 4;
+}
+.part-middle.show-scarf .scarf{ opacity: 1; }
+
+/* snowball pool at bottom */
+.pool-label{
+  position: fixed;
+  bottom: calc(2vh + clamp(80px, 18vw, 130px));
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #1e3a8a; border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 900; color:#1e3a8a;
+  letter-spacing: 1px;
+}
+.pool{
+  position: fixed; bottom: 2vh; left: 0; right: 0;
+  z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 2vw, 14px);
+  padding: 0 clamp(8px, 3vw, 18px);
+}
+.sb{
+  position: relative;
+  width: clamp(70px, 16vw, 110px);
+  aspect-ratio: 1 / 1;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.sb:active{ transform: scale(0.92); }
+.sb-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #e2e8f0 80%);
+  border: 4px solid #bfdbfe;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 16px rgba(30,58,138,0.3), inset -6px -8px 14px rgba(0,0,0,0.1);
+}
+.sb-num{
+  font-size: clamp(28px, 7vw, 44px); color:#1e3a8a;
+  -webkit-text-stroke: 2px #fff;
+  text-shadow: 2px 2px 0 rgba(255,255,255,0.6);
+  font-weight: 900;
+}
+.sb.wobble{ animation: wobble 0.5s ease-in-out; }
+.sb.flying{ pointer-events: none; }
+
+/* flying snowball clone */
+.flying-sb{
+  position: fixed;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #e2e8f0 80%);
+  border: 4px solid #bfdbfe;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; pointer-events: none;
+  font-size: clamp(28px, 7vw, 44px); color:#1e3a8a;
+  -webkit-text-stroke: 2px #fff; font-weight: 900;
+  box-shadow: 0 0 18px rgba(191,219,254,0.7);
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.92);
+  border: 3px solid #1e3a8a; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#1e3a8a;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #1e3a8a; text-shadow:4px 6px 0 #93c5fd; }
+.celeb-count{ color:#1e3a8a; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">SNOWMAN BUILD</div>
+    <div class="title-hero">⛄</div>
+    <div class="title-sub">Add snowballs · Build the snowman!</div>
+    <button class="start-btn" id="btnStart">⛄ Start Building</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Add snowball</span>
+    <span class="hud-target" id="hudTarget">16</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="tree l">🌲</div>
+  <div class="tree r">🌲</div>
+  <div class="hill"></div>
+
+  <div class="snowman-wrap">
+    <div class="snow-part part-head" id="partHead">
+      <div class="hat">🎩</div>
+      <div class="face-eye l"></div>
+      <div class="face-eye r"></div>
+      <div class="face-nose">🥕</div>
+      <div class="face-mouth">···</div>
+    </div>
+    <div class="snow-part part-middle" id="partMiddle">
+      <div class="arm l"></div>
+      <div class="arm r"></div>
+      <div class="scarf"></div>
+    </div>
+    <div class="snow-part part-bottom" id="partBottom"></div>
+  </div>
+
+  <div class="progress-pill"><span id="progress">0</span> / 16</div>
+
+  <div class="pool-label">SNOWBALL PILE</div>
+  <div class="pool" id="pool"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">SNOWMAN COMPLETE!</div>
+    <div class="title-hero">⛄</div>
+    <div class="celeb-count" id="celebCount">Frosty is finished!</div>
+    <button class="start-btn" id="btnAgain">⛄ Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [13,14,15,16,17,18];
+
+let roundIdx = 0, promptIdx = 0, added = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let poolEls = [];
+let busy = false;
+
+function spawnPool(){
+  const pool = $('pool');
+  pool.innerHTML = '';
+  poolEls = [];
+  shuffle(NUMS).forEach(n => {
+    const sb = document.createElement('div');
+    sb.className = 'sb';
+    sb.dataset.n = n;
+    sb.innerHTML = `<div class="sb-disc"><span class="sb-num">${n}</span></div>`;
+    onTap(sb, () => handleSnowballTap(sb, n));
+    pool.appendChild(sb);
+    poolEls.push(sb);
+  });
+}
+
+function handleSnowballTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('flying');
+    audio.tone('whoosh');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    // figure out which body part this snowball goes to
+    // 0-3 → bottom, 4-7 → middle, 8-11 → head, 12-15 → accessories (still aimed at head)
+    let target;
+    if(added < 4) target = $('partBottom');
+    else if(added < 8) target = $('partMiddle');
+    else target = $('partHead');
+    flySnowballTo(el, n, target);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function flySnowballTo(el, n, target){
+  const sR = el.getBoundingClientRect();
+  const tR = target.getBoundingClientRect();
+  const sx = sR.left, sy = sR.top;
+  const tx = tR.left + tR.width/2 - sR.width/2;
+  const ty = tR.top  + tR.height/2 - sR.height/2;
+  const fly = document.createElement('div');
+  fly.className = 'flying-sb';
+  fly.style.left = '0'; fly.style.top = '0';
+  fly.style.width  = sR.width + 'px';
+  fly.style.height = sR.height + 'px';
+  fly.innerHTML = `<span>${n}</span>`;
+  fly.style.transform = `translate(${sx}px, ${sy}px)`;
+  document.body.appendChild(fly);
+  const peakX = (sx + tx) / 2;
+  const peakY = Math.min(sy, ty) - 80;
+  fly.animate(
+    [
+      { transform: `translate(${sx}px, ${sy}px) scale(1) rotate(0)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) scale(1.05) rotate(180deg)`, offset: 0.55 },
+      { transform: `translate(${tx}px, ${ty}px) scale(0.5) rotate(360deg)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 750, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    fly.remove();
+    added++;
+    $('progress').textContent = added;
+    growSnowman();
+    audio.tone('sparkle');
+    starBurst(tx + sR.width/2, ty + sR.height/2);
+    burstConfetti(tx + sR.width/2, ty + sR.height/2, 10);
+    promptIdx++;
+    busy = false;
+    setTimeout(() => {
+      if(added >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 400);
+  }, 770);
+}
+
+function growSnowman(){
+  const bot = $('partBottom'), mid = $('partMiddle'), hed = $('partHead');
+  [bot, mid, hed].forEach(p => p.classList.remove('f1','f2','f3','f4'));
+  const botLvl = Math.min(4, added);
+  const midLvl = Math.min(4, Math.max(0, added - 4));
+  const hedLvl = Math.min(4, Math.max(0, added - 8));
+  if(botLvl > 0) bot.classList.add('f' + botLvl);
+  if(midLvl > 0) mid.classList.add('f' + midLvl);
+  if(hedLvl > 0) hed.classList.add('f' + hedLvl);
+  // Accessories — added one at a time at counts 13/14/15/16
+  if(added >= 13) hed.classList.add('show-eyes');
+  if(added >= 14) hed.classList.add('show-nose');
+  if(added >= 15) {
+    hed.classList.add('show-mouth');
+    mid.classList.add('show-arms');
+  }
+  if(added >= 16) {
+    hed.classList.add('show-hat');
+    mid.classList.add('show-scarf');
+  }
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnPool();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    poolEls.forEach(s => {
+      if(Number(s.dataset.n) === currentTarget){
+        s.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  // All 16 added — short pause to admire the snowman, then celeb
+  clearTimeout(hintTimer);
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${added} snowballs · Frosty is alive!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function resetSnowman(){
+  ['partBottom','partMiddle','partHead'].forEach(id => {
+    const el = $(id);
+    el.classList.remove('f1','f2','f3','f4','show-eyes','show-nose','show-mouth','show-hat','show-arms','show-scarf');
+  });
+}
+
+function startGame(){
+  roundIdx = 0; added = 0;
+  $('progress').textContent = '0';
+  resetSnowman();
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// gentle snowflake background
+(function(){
+  setInterval(() => {
+    if(!$('scrGame').classList.contains('active') && !$('scrTitle').classList.contains('active')) return;
+    const f = document.createElement('div');
+    f.className = 'snowflake';
+    f.textContent = pick(['❄','❅','❆']);
+    f.style.left = (Math.random()*100) + 'vw';
+    f.style.setProperty('--dur', (6 + Math.random()*5) + 's');
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 12000);
+  }, 600);
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

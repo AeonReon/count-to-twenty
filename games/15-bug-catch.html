@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#65a30d">
+<title>Bug Catch · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef9c3 0%, #d9f99d 35%, #86efac 70%, #4ade80 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.sun{
+  position: absolute; top: 10vh; right: 6vw;
+  font-size: clamp(48px, 12vw, 78px);
+  filter: drop-shadow(0 0 25px #fde047);
+  animation: heroFloat 3s ease-in-out infinite;
+}
+.flower{
+  position: absolute; pointer-events: none;
+  font-size: clamp(28px, 7vw, 44px);
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.18));
+  animation: heroFloat 4s ease-in-out infinite;
+}
+.flower.f1{ bottom: 12vh; left: 4vw; animation-delay: 0s; }
+.flower.f2{ bottom: 16vh; right: 6vw; animation-delay: -1s; }
+.flower.f3{ bottom: 9vh; left: 38vw; animation-delay: -2s; }
+
+/* the net hangs at the top — drops on correct tap */
+.net-rod{
+  position: fixed; top: 0; left: 50%;
+  transform: translateX(-50%);
+  z-index: 6; pointer-events: none;
+  font-size: clamp(50px, 12vw, 80px);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+.net-line{
+  position: fixed; left: 50%; top: clamp(64px, 12vw, 90px);
+  width: 3px; height: 0;
+  background: rgba(0,0,0,0.45);
+  transform-origin: top center;
+  transform: translateX(-50%) rotate(0deg);
+  z-index: 7;
+  pointer-events: none;
+  opacity: 0;
+}
+.net-line.casting{ opacity: 1; }
+.net-head{
+  position: absolute; top: 100%; left: 50%;
+  transform: translate(-50%, -4px);
+  font-size: clamp(24px, 6vw, 36px);
+}
+
+/* play area for butterflies */
+.garden{
+  position: absolute; top: 14vh; left: 0; right: 0; bottom: 22vh;
+  z-index: 3;
+}
+
+.bug{
+  position: absolute; cursor: pointer; touch-action: manipulation;
+  width: clamp(80px, 18vw, 110px); height: clamp(80px, 18vw, 110px);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.bug:active{ transform: scale(0.92); }
+.bug-body{
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 35% 30%, var(--c1), var(--c2));
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.bug-wing{
+  position: absolute; top: 10%; width: 50%; height: 80%;
+  background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.85), var(--c2) 80%);
+  border: 2px solid #fff;
+  border-radius: 60% 100% 100% 60% / 50% 100% 100% 50%;
+  opacity: 0.95;
+  z-index: -1;
+}
+.bug-wing.left { left: -15%; animation: flapL 0.45s ease-in-out infinite; transform-origin: right center; }
+.bug-wing.right{ right: -15%; transform: scaleX(-1); animation: flapR 0.45s ease-in-out infinite; transform-origin: left center; }
+@keyframes flapL{ 0%,100%{ transform: rotate(-10deg) } 50%{ transform: rotate(15deg) } }
+@keyframes flapR{ 0%,100%{ transform: scaleX(-1) rotate(-10deg) } 50%{ transform: scaleX(-1) rotate(15deg) } }
+.bug-num{
+  position: relative; z-index: 3;
+  font-size: clamp(30px, 7vw, 46px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+}
+.bug.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* palette */
+.bg1{ --c1:#fca5a5; --c2:#dc2626; }
+.bg2{ --c1:#fde047; --c2:#d97706; }
+.bg3{ --c1:#93c5fd; --c2:#2563eb; }
+.bg4{ --c1:#fbcfe8; --c2:#db2777; }
+.bg5{ --c1:#c4b5fd; --c2:#7c3aed; }
+.bg6{ --c1:#86efac; --c2:#16a34a; }
+
+/* glass jar at bottom for caught butterflies */
+.jar{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 6;
+  width: clamp(110px, 24vw, 160px);
+  height: clamp(130px, 28vw, 190px);
+  background: linear-gradient(180deg, rgba(186,230,253,0.5) 0%, rgba(56,189,248,0.65) 100%);
+  border: 5px solid #1e3a8a;
+  border-radius: 20px 20px 28px 28px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25),
+              inset 0 -10px 18px rgba(56,189,248,0.4),
+              inset 6px 6px 14px rgba(255,255,255,0.5);
+  overflow: hidden;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 8px;
+}
+.jar::before{
+  content:''; position:absolute; top: -12px; left: 10%; right: 10%;
+  height: 14px; background:#1e3a8a; border-radius: 6px 6px 0 0;
+}
+.jar-count{
+  font-size: clamp(22px, 5vw, 32px); color:#fff;
+  -webkit-text-stroke: 1.5px #1e3a8a;
+  font-weight: 900;
+}
+.jar-bug{
+  position: absolute; font-size: 18px;
+  animation: jarFlit 2s ease-in-out infinite;
+}
+@keyframes jarFlit{ 0%,100%{ transform: translate(0,0) rotate(-8deg) } 50%{ transform: translate(8px,-6px) rotate(8deg) } }
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">BUG CATCH</div>
+    <div class="title-hero">🦋</div>
+    <div class="title-sub">Catch butterflies with the net!</div>
+    <button class="start-btn" id="btnStart">🦋 Start Catching</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Catch bug</span>
+    <span class="hud-target" id="hudTarget">17</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="sun">☀️</div>
+  <div class="flower f1">🌸</div>
+  <div class="flower f2">🌺</div>
+  <div class="flower f3">🌷</div>
+
+  <div class="net-rod">🥍</div>
+  <div class="net-line" id="netLine"><div class="net-head">🥅</div></div>
+
+  <div class="garden" id="garden"></div>
+
+  <div class="jar" id="jar">
+    <span class="jar-count" id="jarCount">0</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">JAR IS FULL!</div>
+    <div class="title-hero">🦋</div>
+    <div class="celeb-count" id="celebCount">All butterflies caught!</div>
+    <button class="start-btn" id="btnAgain">🦋 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [14,15,16,17,18,19];
+const COLORS = ['bg1','bg2','bg3','bg4','bg5','bg6'];
+
+let roundIdx = 0, promptIdx = 0, caught = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let bugEls = [];
+let netBusy = false;
+
+function rodTipXY(){
+  const x = innerWidth / 2;
+  const y = Math.max(64, Math.min(90, innerWidth * 0.12));
+  return { x, y };
+}
+
+function spawnBugs(){
+  const garden = $('garden');
+  garden.innerHTML = '';
+  bugEls = [];
+  const w = garden.clientWidth || innerWidth;
+  const h = garden.clientHeight || (innerHeight*0.5);
+  // 3x2 jittered positions
+  const cols = 3, rows = 2;
+  const colW = w / cols, rowH = h / rows;
+  const positions = [];
+  for(let r = 0; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      positions.push({
+        x: colW * c + colW*0.5 - 50 + (Math.random()-0.5)*colW*0.35,
+        y: rowH * r + rowH*0.5 - 50 + (Math.random()-0.5)*rowH*0.35
+      });
+    }
+  }
+  const colors = shuffle(COLORS);
+  shuffle(NUMS).forEach((n, i) => {
+    const b = document.createElement('div');
+    b.className = 'bug';
+    b.dataset.n = n;
+    b.innerHTML = `
+      <div class="bug-wing left ${colors[i]}"></div>
+      <div class="bug-wing right ${colors[i]}"></div>
+      <div class="bug-body ${colors[i]}"></div>
+      <div class="bug-num">${n}</div>`;
+    b.style.left = positions[i].x + 'px';
+    b.style.top  = positions[i].y + 'px';
+    garden.appendChild(b);
+    onTap(b, () => handleBugTap(b, n));
+    bugEls.push(b);
+    flitBug(b);
+  });
+}
+
+function flitBug(el){
+  const dx = 20 + Math.random()*40, dy = 15 + Math.random()*35;
+  el.animate(
+    [
+      { transform: 'translate(0,0)' },
+      { transform: `translate(${dx}px, ${-dy}px)` },
+      { transform: `translate(${-dx}px, ${dy}px)` },
+      { transform: 'translate(0,0)' }
+    ],
+    { duration: 3000 + Math.random()*1200, iterations: Infinity, easing: 'ease-in-out' }
+  );
+}
+
+function castNetTo(tx, ty){
+  return new Promise(resolve => {
+    const line = $('netLine');
+    const { x: rx, y: ry } = rodTipXY();
+    const dx = tx - rx, dy = ty - ry;
+    const dist = Math.max(20, Math.sqrt(dx*dx + dy*dy));
+    const angleDeg = Math.atan2(dx, dy) * 180 / Math.PI;
+    line.style.transform = `translateX(-50%) rotate(${angleDeg}deg)`;
+    line.style.height = '0px';
+    line.classList.add('casting');
+    const a = line.animate(
+      [{ height: '0px' }, { height: dist + 'px' }],
+      { duration: 320, easing: 'cubic-bezier(0.55,0.085,0.68,0.53)', fill: 'forwards' }
+    );
+    a.onfinish = () => resolve(dist);
+  });
+}
+
+function reelNetUp(rect, dist){
+  // Pull the line back up
+  const line = $('netLine');
+  line.animate(
+    [{ height: dist + 'px' }, { height: '0px' }],
+    { duration: 550, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    line.classList.remove('casting');
+    line.style.height = '0px';
+  }, 600);
+}
+
+function handleBugTap(el, n){
+  if(netBusy) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    netBusy = true;
+    audio.tone('whoosh');
+    castNetTo(cx, cy).then(dist => {
+      audio.tone('ding');
+      starBurst(cx, cy);
+      burstConfetti(cx, cy, 14);
+      audio.clearQueue();
+      audio.speakCategory('correct');
+      // Bug flies up to the rod with the net
+      const { x: rx, y: ry } = rodTipXY();
+      const dx = rx - cx, dy = ry - cy;
+      el.animate(
+        [
+          { transform: `translate(0,0) scale(1) rotate(0)` },
+          { transform: `translate(${dx}px, ${dy}px) scale(0.4) rotate(60deg)`, opacity: 0 }
+        ],
+        { duration: 600, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+      );
+      reelNetUp(r, dist);
+      addBugToJar();
+      caught++;
+      $('jarCount').textContent = caught;
+      clearTimeout(hintTimer);
+      setTimeout(() => el.remove(), 650);
+      promptIdx++;
+      setTimeout(() => { netBusy = false; nextPrompt(); }, 1100);
+    });
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function addBugToJar(){
+  const jar = $('jar');
+  const mini = document.createElement('div');
+  mini.className = 'jar-bug';
+  mini.textContent = pick(['🦋','🐛','🐞','🦗']);
+  mini.style.left = (15 + Math.random()*60) + '%';
+  mini.style.bottom = (10 + Math.random()*55) + '%';
+  mini.style.animationDelay = (-Math.random()*2) + 's';
+  jar.appendChild(mini);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnBugs();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    bugEls.forEach(b => {
+      if(Number(b.dataset.n) === currentTarget){
+        b.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${caught} bugs in the jar!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; caught = 0;
+  $('jarCount').textContent = '0';
+  document.querySelectorAll('.jar-bug').forEach(b => b.remove());
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

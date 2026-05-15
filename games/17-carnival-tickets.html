@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#dc2626">
+<title>Carnival Tickets · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background:
+    repeating-linear-gradient(90deg, #fef3c7 0 40px, #fde68a 40px 80px),
+    #fef3c7;
+  color: #7f1d1d;
+}
+.back-home-btn{ color:#7f1d1d; border-color:#fde047; background:#fff; }
+.home-bubble{ border-color:#fde047; }
+
+/* big circus tent at top */
+.tent{
+  position: absolute; top: 7vh; left: 50%;
+  transform: translateX(-50%);
+  width: clamp(220px, 60vw, 360px); height: clamp(80px, 18vw, 130px);
+  z-index: 2; pointer-events: none;
+  background: repeating-conic-gradient(from -90deg, #dc2626 0deg 30deg, #fef3c7 30deg 60deg);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
+}
+.tent::before{
+  content:'🎪'; position: absolute; top: 32%; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(28px, 7vw, 44px);
+  filter: drop-shadow(0 0 8px #fff);
+}
+
+.ferris{
+  position: absolute; top: 14vh; left: 6vw;
+  font-size: clamp(40px, 10vw, 64px);
+  opacity: 0.7;
+  animation: spin 8s linear infinite;
+  pointer-events: none;
+}
+@keyframes spin{ to { transform: rotate(360deg) } }
+.balloon-deco{
+  position: absolute; pointer-events: none;
+  font-size: clamp(22px, 5vw, 32px);
+  animation: heroFloat 3s ease-in-out infinite;
+}
+.balloon-deco.b1{ top: 26vh; right: 8vw; }
+.balloon-deco.b2{ top: 22vh; right: 16vw; animation-delay: -1s; }
+
+/* prize bowl at the bottom */
+.prize-shelf{
+  position: fixed; bottom: clamp(110px, 24vw, 170px);
+  left: 50%; transform: translateX(-50%);
+  width: clamp(220px, 56vw, 360px);
+  height: clamp(80px, 18vw, 110px);
+  z-index: 5;
+  background: linear-gradient(180deg, #b91c1c, #7f1d1d);
+  border: 5px solid #422006; border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.35);
+  padding: 8px 12px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.prize-shelf-label{
+  color: #fde047; font-weight: 900; font-size: 11px;
+  letter-spacing: 1px; margin-bottom: 4px;
+}
+.prize-row{
+  display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;
+  min-height: 32px;
+}
+.prize{
+  font-size: clamp(22px, 5.5vw, 32px);
+  animation: prizeAppear 0.6s var(--bounce);
+}
+@keyframes prizeAppear{ 0%{ transform:scale(0) rotate(-180deg) } 100%{ transform:scale(1) rotate(0) } }
+
+/* tickets in a row at the booth */
+.booth-label{
+  position: absolute; top: 22vh; left: 50%;
+  transform: translateX(-50%); z-index: 4;
+  background: #fff; color: #7f1d1d;
+  border: 4px solid #7f1d1d; border-radius: 14px;
+  padding: 6px 14px; font-weight: 900;
+  font-size: clamp(12px, 3vw, 16px); letter-spacing: 1px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.booth{
+  position: absolute; top: 28vh; left: 0; right: 0; bottom: 30vh;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 2.5vw, 18px);
+  padding: clamp(14px, 4vw, 26px);
+  align-content: center;
+}
+.ticket{
+  position: relative;
+  aspect-ratio: 5 / 3;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #fff; border-radius: 10px;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.3), inset 0 -4px 10px rgba(0,0,0,0.15);
+  transition: transform 0.15s var(--bounce);
+}
+.ticket::before, .ticket::after{
+  content:''; position: absolute; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px;
+  background: radial-gradient(circle, #fff 30%, transparent 60%),
+              repeating-radial-gradient(circle, transparent 0 2px, rgba(0,0,0,0.3) 2px 3px);
+  border-radius: 50%;
+}
+.ticket::before{ left: -8px; }
+.ticket::after { right: -8px; }
+.ticket:active{ transform: scale(0.92); }
+.ticket.wobble{ animation: wobble 0.5s ease-in-out; }
+.ticket-num{
+  font-size: clamp(36px, 9vw, 56px); color:#fff;
+  -webkit-text-stroke: 2.5px rgba(0,0,0,0.45);
+  text-shadow: 2px 3px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+}
+.tc1{ --c1:#fca5a5; --c2:#dc2626; }
+.tc2{ --c1:#fde047; --c2:#d97706; }
+.tc3{ --c1:#93c5fd; --c2:#2563eb; }
+.tc4{ --c1:#86efac; --c2:#16a34a; }
+.tc5{ --c1:#fbcfe8; --c2:#db2777; }
+.tc6{ --c1:#c4b5fd; --c2:#7c3aed; }
+
+/* flying ticket */
+.flying-ticket{
+  position: fixed;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #fff; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 7vw, 44px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  font-weight: 900;
+  z-index: 200; pointer-events: none;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #7f1d1d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#7f1d1d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #7f1d1d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#7f1d1d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">CARNIVAL TICKETS</div>
+    <div class="title-hero">🎪</div>
+    <div class="title-sub">Trade tickets for prizes!</div>
+    <button class="start-btn" id="btnStart">🎟️ Step Right Up</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Ticket</span>
+    <span class="hud-target" id="hudTarget">7</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="tent"></div>
+  <div class="ferris">🎡</div>
+  <div class="balloon-deco b1">🎈</div>
+  <div class="balloon-deco b2">🎈</div>
+
+  <div class="booth-label">TICKET BOOTH</div>
+  <div class="booth" id="booth"></div>
+
+  <div class="prize-shelf">
+    <div class="prize-shelf-label">PRIZES WON</div>
+    <div class="prize-row" id="prizeRow"></div>
+  </div>
+
+  <div class="progress-pill">🏆 <span id="progress">0</span> / 16</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">PRIZE GALORE!</div>
+    <div class="title-hero">🏆</div>
+    <div class="celeb-count" id="celebCount">All prizes won!</div>
+    <button class="start-btn" id="btnAgain">🎟️ Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const FULL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+const COLORS = ['tc1','tc2','tc3','tc4','tc5','tc6'];
+const PRIZES = ['🧸','🎁','🦄','🦖','🐻','🚀','🦋','🦜','🐢','🐶','🌟','🎯','🎈','🎂','🍭','🎨'];
+
+let roundIdx = 0, promptIdx = 0, traded = 0;
+let currentTarget = null;
+let promptList = [];
+let currentPool = [];
+let hintTimer = null;
+let ticketEls = [];
+let busy = false;
+
+function pickPool(){
+  // 6 random numbers from 0-20 for this prompt's booth
+  return shuffle(FULL).slice(0, 6);
+}
+
+function buildPromptList(){
+  // 4 unique targets per round, drawn from full 0-20
+  return shuffle(FULL).slice(0, 4);
+}
+
+function spawnTickets(){
+  const booth = $('booth');
+  booth.innerHTML = '';
+  ticketEls = [];
+  // ensure target is in the pool
+  let pool = pickPool();
+  if(!pool.includes(currentTarget)){
+    pool[Math.floor(Math.random()*pool.length)] = currentTarget;
+  }
+  currentPool = shuffle(pool);
+  const colors = shuffle(COLORS);
+  currentPool.forEach((n, i) => {
+    const t = document.createElement('div');
+    t.className = 'ticket ' + colors[i % colors.length];
+    t.dataset.n = n;
+    t.innerHTML = `<span class="ticket-num">${n}</span>`;
+    onTap(t, () => handleTicketTap(t, n));
+    booth.appendChild(t);
+    ticketEls.push(t);
+  });
+}
+
+function handleTicketTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    el.style.pointerEvents = 'none';
+    audio.tone('whoosh');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    flyTicketToShelf(el, n);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function flyTicketToShelf(el, n){
+  const sR = el.getBoundingClientRect();
+  const shelfR = document.querySelector('.prize-shelf').getBoundingClientRect();
+  const tx = shelfR.left + shelfR.width/2 - sR.width/2;
+  const ty = shelfR.top + 8;
+  const color = (el.className.match(/tc\d/) || ['tc1'])[0];
+  const fly = document.createElement('div');
+  fly.className = 'flying-ticket ' + color;
+  fly.textContent = n;
+  fly.style.left = '0'; fly.style.top = '0';
+  fly.style.width  = sR.width + 'px';
+  fly.style.height = sR.height + 'px';
+  fly.style.transform = `translate(${sR.left}px, ${sR.top}px)`;
+  document.body.appendChild(fly);
+  el.style.opacity = 0.2;
+  const peakX = (sR.left + tx) / 2;
+  const peakY = Math.min(sR.top, ty) - 60;
+  fly.animate(
+    [
+      { transform: `translate(${sR.left}px, ${sR.top}px) scale(1) rotate(0)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) scale(0.95) rotate(180deg)`, offset: 0.55 },
+      { transform: `translate(${tx}px, ${ty}px) scale(0.5) rotate(360deg)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 750, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    fly.remove();
+    traded++;
+    $('progress').textContent = traded;
+    // Every correct adds one prize emoji to the prize row
+    addPrize();
+    audio.tone('ding');
+    starBurst(tx + sR.width/4, ty + sR.height/4);
+    burstConfetti(tx + sR.width/4, ty, 14);
+    promptIdx++;
+    busy = false;
+    setTimeout(nextPrompt, 500);
+  }, 770);
+}
+
+function addPrize(){
+  const row = $('prizeRow');
+  const p = document.createElement('span');
+  p.className = 'prize';
+  p.textContent = pick(PRIZES);
+  row.appendChild(p);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnTickets();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    ticketEls.forEach(t => {
+      if(Number(t.dataset.n) === currentTarget){
+        t.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = buildPromptList();
+  showBanner('Round ' + (roundIdx+1), 'Any number 0–20');
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${traded} prizes won!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; traded = 0;
+  $('progress').textContent = '0';
+  $('prizeRow').innerHTML = '';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

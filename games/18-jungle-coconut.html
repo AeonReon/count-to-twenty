@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#16a34a">
+<title>Jungle Coconut · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef9c3 0%, #d9f99d 30%, #84cc16 65%, #166534 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fde047; }
+.home-bubble{ border-color:#fde047; }
+
+.jungle-bg{
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 100vh; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 30%, rgba(20,83,45,0.3) 0%, transparent 25%),
+    radial-gradient(circle at 85% 40%, rgba(20,83,45,0.3) 0%, transparent 25%),
+    radial-gradient(circle at 50% 60%, rgba(20,83,45,0.25) 0%, transparent 35%);
+}
+.parrot{
+  position: absolute; top: 12vh; right: 8vw;
+  font-size: clamp(40px, 10vw, 64px); z-index: 4;
+  animation: heroFloat 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* tree trunk + canopy */
+.tree-trunk{
+  position: absolute; bottom: 12vh; left: 50%;
+  transform: translateX(-50%);
+  width: clamp(40px, 9vw, 60px); height: 65vh;
+  background: linear-gradient(90deg, #78350f 0%, #92400e 50%, #78350f 100%);
+  border-left: 4px solid #422006; border-right: 4px solid #422006;
+  border-radius: 8px;
+  z-index: 1;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+}
+.canopy{
+  position: absolute; top: 6vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(120px, 30vw, 200px); z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.3));
+}
+
+/* coconut grid hanging from canopy */
+.coconuts{
+  position: absolute; top: 18vh; left: 0; right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 2.5vw, 18px);
+  padding: 0 clamp(14px, 4vw, 28px);
+  z-index: 3;
+}
+.coco{
+  position: relative;
+  aspect-ratio: 1 / 1.1;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: flex-end; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.coco:active{ transform: scale(0.93); }
+.coco-stem{
+  position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 20px;
+  background: #422006; border-radius: 2px;
+}
+.coco-body{
+  position: relative;
+  width: 75%; height: 80%;
+  background: radial-gradient(circle at 35% 30%, #92400e 0%, #57220c 80%);
+  border: 3px solid #422006;
+  border-radius: 50%;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4), inset -8px -10px 16px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+}
+.coco-body::before, .coco-body::after, .coco-body span.dot{
+  content:''; position: absolute;
+  width: 6px; height: 8px;
+  background: #1f2937; border-radius: 50%;
+}
+.coco-body::before{ top: 30%; left: 25%; }
+.coco-body::after { top: 30%; right: 25%; }
+.coco-num{
+  font-size: clamp(28px, 7vw, 44px); color:#fef3c7;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.55);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+  z-index: 3;
+}
+.coco.wobble{ animation: wobble 0.5s ease-in-out; }
+.coco.dropping{ pointer-events: none; }
+
+/* falling coconut clone */
+.falling-coco{
+  position: fixed;
+  width: 100%; height: 100%;
+  z-index: 200; pointer-events: none;
+}
+
+/* monkey at the bottom — moves left/right to catch */
+.monkey{
+  position: fixed; bottom: clamp(76px, 16vw, 110px);
+  left: 50%; transform: translateX(-50%);
+  font-size: clamp(60px, 14vw, 90px); z-index: 6;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  transition: left 0.5s cubic-bezier(0.45,0.05,0.55,0.95);
+  animation: monkeyIdle 1.6s ease-in-out infinite;
+}
+@keyframes monkeyIdle{ 0%,100%{ transform: translateX(-50%) translateY(0) } 50%{ transform: translateX(-50%) translateY(-6px) } }
+.monkey.catch{ animation: monkeyCatch 0.7s var(--bounce); }
+@keyframes monkeyCatch{
+  0%{ transform: translateX(-50%) scale(1) } 30%{ transform: translateX(-50%) scale(1.2) rotate(-10deg) }
+  60%{ transform: translateX(-50%) scale(1.1) rotate(10deg) } 100%{ transform: translateX(-50%) scale(1) }
+}
+
+/* basket beside monkey */
+.basket-jungle{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  width: clamp(120px, 28vw, 180px);
+  height: clamp(70px, 16vw, 100px);
+  background: linear-gradient(180deg, #b45309, #78350f);
+  border: 4px solid #422006;
+  border-radius: 8px 8px 30% 30% / 8px 8px 100% 100%;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.basket-jungle::before{
+  content:''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: repeating-linear-gradient(90deg, #78350f 0 4px, #422006 4px 8px);
+}
+.basket-count{
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  font-size: clamp(22px, 5.5vw, 32px); color: #fde047;
+  -webkit-text-stroke: 1.8px #422006;
+  font-weight: 900; z-index: 3;
+}
+.basket-coco{
+  position: absolute; font-size: clamp(20px, 4.5vw, 28px);
+  animation: basketBob 2s ease-in-out infinite;
+}
+@keyframes basketBob{ 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-4px) } }
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #14532d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#14532d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">JUNGLE COCONUT</div>
+    <div class="title-hero">🐒</div>
+    <div class="title-sub">Shake the right coconut down to the monkey!</div>
+    <button class="start-btn" id="btnStart">🐒 Start Shaking</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Shake coconut</span>
+    <span class="hud-target" id="hudTarget">13</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="jungle-bg"></div>
+  <div class="parrot">🦜</div>
+  <div class="tree-trunk"></div>
+  <div class="canopy">🌳</div>
+
+  <div class="coconuts" id="coconuts"></div>
+
+  <div class="monkey" id="monkey">🐒</div>
+  <div class="basket-jungle" id="basket"><span class="basket-count" id="basketCount">0</span></div>
+
+  <div class="progress-pill">🥥 <span id="progress">0</span> / 16</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">BASKET FULL!</div>
+    <div class="title-hero">🐒</div>
+    <div class="celeb-count" id="celebCount">All coconuts caught!</div>
+    <button class="start-btn" id="btnAgain">🐒 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const FULL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+
+let roundIdx = 0, promptIdx = 0, caught = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let cocoEls = [];
+let busy = false;
+
+function spawnCoconuts(){
+  const grid = $('coconuts');
+  grid.innerHTML = '';
+  cocoEls = [];
+  let pool = shuffle(FULL).slice(0, 6);
+  if(!pool.includes(currentTarget)){
+    pool[Math.floor(Math.random()*pool.length)] = currentTarget;
+  }
+  pool = shuffle(pool);
+  pool.forEach(n => {
+    const c = document.createElement('div');
+    c.className = 'coco';
+    c.dataset.n = n;
+    c.innerHTML = `
+      <div class="coco-stem"></div>
+      <div class="coco-body"><span class="coco-num">${n}</span></div>`;
+    onTap(c, () => handleCocoTap(c, n));
+    grid.appendChild(c);
+    cocoEls.push(c);
+  });
+}
+
+function handleCocoTap(el, n){
+  if(busy || el.classList.contains('dropping')) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('dropping');
+    audio.tone('whoosh');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    dropCoconut(el, n);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function dropCoconut(el, n){
+  const sR = el.getBoundingClientRect();
+  // Move monkey horizontally to align with falling coconut
+  const monkeyTargetX = (sR.left + sR.width/2) / innerWidth * 100;
+  $('monkey').style.left = monkeyTargetX + '%';
+  // Animate the original coconut FALLING down to the monkey
+  const monkeyR = $('monkey').getBoundingClientRect();
+  const dy = (monkeyR.top + monkeyR.height/3) - (sR.top + sR.height/2);
+  el.animate(
+    [
+      { transform: 'translateY(0) rotate(0)', offset: 0 },
+      { transform: `translateY(${dy*0.3}px) rotate(20deg)`, offset: 0.3 },
+      { transform: `translateY(${dy}px) rotate(360deg) scale(0.8)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 700, easing: 'cubic-bezier(0.55,0.085,0.68,0.53)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    el.remove();
+    $('monkey').classList.add('catch');
+    setTimeout(() => $('monkey').classList.remove('catch'), 700);
+    caught++;
+    addBasketCoco();
+    $('basketCount').textContent = caught;
+    $('progress').textContent = caught;
+    audio.tone('ding');
+    const mR = $('monkey').getBoundingClientRect();
+    starBurst(mR.left + mR.width/2, mR.top + mR.height/2);
+    burstConfetti(mR.left + mR.width/2, mR.top + mR.height/2, 12);
+    promptIdx++;
+    setTimeout(() => { busy = false; nextPrompt(); }, 600);
+  }, 720);
+}
+
+function addBasketCoco(){
+  const basket = $('basket');
+  const mini = document.createElement('div');
+  mini.className = 'basket-coco';
+  mini.textContent = '🥥';
+  mini.style.left = (10 + Math.random()*70) + '%';
+  mini.style.bottom = (15 + Math.random()*40) + '%';
+  mini.style.animationDelay = (-Math.random()*2) + 's';
+  basket.appendChild(mini);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  spawnCoconuts();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('can_you_find');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    cocoEls.forEach(c => {
+      if(Number(c.dataset.n) === currentTarget && !c.classList.contains('dropping')){
+        c.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 6500);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(FULL).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1), 'Any number 0–20');
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${caught} coconuts in the basket!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; caught = 0;
+  $('progress').textContent = '0';
+  $('basketCount').textContent = '0';
+  document.querySelectorAll('.basket-coco').forEach(b => b.remove());
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>
