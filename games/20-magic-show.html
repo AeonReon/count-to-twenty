@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#7c3aed">
-<title>Magic Show · aha!</title>
+<title>What Comes Next? · aha!</title>
 <link rel="stylesheet" href="../js/engine.css">
 <style>
 html, body{
@@ -14,52 +14,118 @@ html, body{
   color: #ede9fe;
 }
 .back-home-btn{ color:#312e81; border-color:#fde047; background:#ede9fe; }
-.home-bubble{ border-color:#fde047; }
 
 .spotlight{
   position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 25%, rgba(253,224,71,0.25) 0%, transparent 50%);
+  background: radial-gradient(ellipse at 50% 30%, rgba(253,224,71,0.25) 0%, transparent 50%);
   z-index: 1;
 }
 .curtain-l, .curtain-r{
   position: absolute; top: 0; bottom: 0;
-  width: 12vw;
-  background: repeating-linear-gradient(90deg, #991b1b 0 16px, #7f1d1d 16px 32px);
+  width: 8vw;
+  background: repeating-linear-gradient(90deg, #991b1b 0 14px, #7f1d1d 14px 28px);
   z-index: 0;
 }
 .curtain-l{ left: 0; border-right: 4px solid #fbbf24; }
 .curtain-r{ right: 0; border-left: 4px solid #fbbf24; }
-.star-bg{ position: absolute; pointer-events: none; color: #fde047; font-size: 16px;
-  animation: twinkle var(--dur,2s) ease-in-out infinite var(--delay,0s); opacity: 0.6; }
+.star-bg{ position: absolute; pointer-events: none; color: #fde047; font-size: 14px;
+  animation: twinkle var(--dur,2s) ease-in-out infinite var(--delay,0s); opacity: 0.55; }
 @keyframes twinkle{ 0%,100%{ opacity:0.3 } 50%{ opacity:1 } }
 
-/* magician + top hat */
-.stage{
-  position: absolute; top: 12vh; left: 50%;
-  transform: translateX(-50%); z-index: 4;
-  display: flex; flex-direction: column; align-items: center;
-}
+/* magician on left of stage */
 .magician{
-  font-size: clamp(64px, 16vw, 100px);
+  position: absolute; top: 14vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(56px, 14vw, 90px);
+  z-index: 5;
   filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
   animation: heroFloat 2.6s ease-in-out infinite;
 }
-.magician.cheer{ animation: cheer 0.7s var(--bounce); }
-@keyframes cheer{
-  0%{ transform: scale(1) rotate(0); }
-  30%{ transform: scale(1.2) rotate(-10deg); }
-  60%{ transform: scale(1.1) rotate(10deg); }
+.magician.cheer{ animation: mcheer 0.7s var(--bounce); }
+@keyframes mcheer{
+  0%{ transform: translateX(-50%) scale(1); }
+  30%{ transform: translateX(-50%) scale(1.2) rotate(-10deg); }
+  60%{ transform: translateX(-50%) scale(1.1) rotate(10deg); }
+  100%{ transform: translateX(-50%) scale(1); }
+}
+
+/* The "question card" — shows the number to operate on, with an arrow showing next/before */
+.question-card{
+  position: absolute; top: 28vh; left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: clamp(260px, 72vw, 380px);
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #fde047 0%, #fbbf24 100%);
+  border: 5px solid #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(8px, 3vw, 18px);
+}
+.qc-prompt{
+  font-size: clamp(15px, 4vw, 22px);
+  font-weight: 900;
+  color: #1e1b4b;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  flex: 0 0 auto;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.6);
+}
+.qc-arrow{
+  font-size: clamp(28px, 7vw, 42px);
+  line-height: 1; color: #1e1b4b;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+.qc-number{
+  font-size: clamp(58px, 14vw, 92px);
+  font-weight: 900;
+  color: #be123c;
+  -webkit-text-stroke: 3px #1e1b4b;
+  text-shadow: 3px 4px 0 #1e1b4b, 0 0 18px rgba(190,18,60,0.5);
+  line-height: 1;
+}
+.qc-question{
+  font-size: clamp(60px, 14vw, 92px);
+  font-weight: 900;
+  color: #ede9fe;
+  -webkit-text-stroke: 3px #1e1b4b;
+  text-shadow: 3px 4px 0 #1e1b4b;
+  line-height: 1;
+  animation: qBlink 1.2s ease-in-out infinite;
+}
+@keyframes qBlink{ 0%,100%{ opacity:0.5 } 50%{ opacity:1 } }
+.question-card.reveal .qc-question{ display: none; }
+.question-card.reveal .qc-answer{
+  font-size: clamp(60px, 14vw, 92px);
+  font-weight: 900;
+  color: #16a34a;
+  -webkit-text-stroke: 3px #1e1b4b;
+  text-shadow: 3px 4px 0 #1e1b4b, 0 0 22px rgba(74,222,128,0.6);
+  line-height: 1;
+  animation: revealPop 0.7s var(--bounce);
+}
+@keyframes revealPop{
+  0%{ transform: scale(0); }
+  60%{ transform: scale(1.3); }
   100%{ transform: scale(1); }
+}
+.qc-answer{ display: none; }
+.question-card.reveal .qc-answer{ display: inline-block; }
+
+/* hat + reveal row underneath */
+.hat-stage{
+  position: fixed; bottom: clamp(170px, 36vw, 230px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 4;
 }
 .top-hat{
   position: relative;
-  margin-top: -8px;
-  width: clamp(110px, 26vw, 180px);
-  height: clamp(60px, 14vw, 100px);
+  width: clamp(120px, 28vw, 190px);
+  height: clamp(55px, 13vw, 90px);
   background: linear-gradient(180deg, #1e1b4b 0%, #0c0a1f 100%);
   border: 4px solid #fbbf24; border-radius: 6px 6px 0 0;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.5), inset 0 -6px 14px rgba(0,0,0,0.4);
-  z-index: 2;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.5);
 }
 .top-hat::before{
   content:''; position: absolute; bottom: -8px;
@@ -68,37 +134,30 @@ html, body{
 }
 .top-hat::after{
   content:''; position: absolute; top: 26%;
-  left: 0; right: 0; height: 14px;
+  left: 0; right: 0; height: 12px;
   background: linear-gradient(180deg, #be123c, #7f1d1d);
 }
-.top-hat-mouth{
-  position: absolute; bottom: -4px;
-  left: 8%; right: 8%; height: 18px;
-  background: radial-gradient(ellipse at center top, transparent 30%, rgba(0,0,0,0.5) 80%);
-  z-index: 3;
-}
-
-/* animals + objects revealed from the hat */
 .reveal-row{
   position: fixed; bottom: clamp(120px, 28vw, 180px);
-  left: 50%; transform: translateX(-50%); z-index: 5;
+  left: 50%; transform: translateX(-50%);
+  z-index: 5;
   display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
   max-width: 90vw;
-  min-height: 40px;
+  min-height: 36px;
 }
 .reveal-item{
-  font-size: clamp(28px, 7vw, 42px);
-  animation: revealPop 0.7s var(--bounce);
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  font-size: clamp(24px, 6vw, 36px);
+  animation: revPop 0.7s var(--bounce);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
 }
-@keyframes revealPop{
-  0%   { transform: scale(0) rotate(-200deg); opacity: 0; }
-  60%  { transform: scale(1.3) rotate(20deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); }
+@keyframes revPop{
+  0%{ transform: scale(0) rotate(-200deg); opacity: 0; }
+  60%{ transform: scale(1.3) rotate(20deg); opacity: 1; }
+  100%{ transform: scale(1) rotate(0); }
 }
 
-/* sphere pool */
-.pool-label{
+/* answer choices — 6 cards */
+.choice-label{
   position: fixed;
   bottom: calc(2vh + clamp(80px, 18vw, 130px));
   left: 50%; transform: translateX(-50%); z-index: 7;
@@ -108,40 +167,39 @@ html, body{
   font-size: 12px; font-weight: 900; color:#312e81;
   letter-spacing: 1px;
 }
-.pool{
+.choices{
   position: fixed; bottom: 2vh; left: 0; right: 0;
   z-index: 6;
   display: flex; justify-content: center; align-items: flex-end;
   gap: clamp(6px, 2vw, 14px);
   padding: 0 clamp(8px, 3vw, 18px);
 }
-.sphere{
+.choice{
   position: relative;
-  width: clamp(72px, 16vw, 110px); aspect-ratio: 1;
+  width: clamp(64px, 14vw, 95px); aspect-ratio: 5/6;
   cursor: pointer; touch-action: manipulation;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.15s var(--bounce);
 }
-.sphere:active{ transform: scale(0.92); }
-.sphere-disc{
+.choice:active{ transform: scale(0.92); }
+.choice-card{
   position: relative;
   width: 100%; height: 100%;
-  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.85), var(--c1) 50%, var(--c2) 100%);
+  background: linear-gradient(180deg, var(--c1), var(--c2));
   border: 4px solid #fff;
-  border-radius: 50%;
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 8px 18px rgba(0,0,0,0.4),
-              inset -8px -10px 14px rgba(0,0,0,0.2),
-              0 0 20px var(--c2);
+              inset -8px -10px 14px rgba(0,0,0,0.2);
 }
-.sphere-num{
-  font-size: clamp(28px, 7vw, 44px); color:#fff;
-  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+.choice-num{
+  font-size: clamp(32px, 7.5vw, 50px); color:#fff;
+  -webkit-text-stroke: 2.5px rgba(0,0,0,0.5);
   text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
   font-weight: 900;
 }
-.sphere.wobble{ animation: wobble 0.5s ease-in-out; }
-.sphere.flying{ pointer-events: none; }
+.choice.wobble{ animation: wobble 0.5s ease-in-out; }
+.choice.flying{ pointer-events: none; }
 
 .mc1{ --c1:#fbcfe8; --c2:#db2777; }
 .mc2{ --c1:#fde047; --c2:#d97706; }
@@ -150,17 +208,16 @@ html, body{
 .mc5{ --c1:#c4b5fd; --c2:#7c3aed; }
 .mc6{ --c1:#fca5a5; --c2:#dc2626; }
 
-.flying-sphere{
+.flying-choice{
   position: fixed; pointer-events: none; z-index: 200;
-  border: 4px solid #fff; border-radius: 50%;
+  border: 4px solid #fff; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(28px, 7vw, 44px); color:#fff;
-  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  font-size: clamp(32px, 7.5vw, 50px); color:#fff;
+  -webkit-text-stroke: 2.5px rgba(0,0,0,0.5);
   font-weight: 900;
-  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.85), var(--c1) 50%, var(--c2) 100%);
+  background: linear-gradient(180deg, var(--c1), var(--c2));
 }
 
-/* puff of smoke when sphere drops into hat */
 .poof{
   position: fixed; font-size: clamp(34px, 8vw, 56px);
   pointer-events: none; z-index: 199;
@@ -184,21 +241,20 @@ html, body{
 <body>
 
 <a href="../index.html" class="back-home-btn">← Home</a>
-<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
 
 <div id="scrTitle" class="screen active">
   <div class="title-wrap">
-    <div class="title-big">MAGIC SHOW</div>
+    <div class="title-big">WHAT COMES NEXT?</div>
     <div class="title-hero">🎩</div>
-    <div class="title-sub">Pull spheres into the magic hat!</div>
+    <div class="title-sub">Find the number that comes next (or before)!</div>
     <button class="start-btn" id="btnStart">🎩 Curtain Up</button>
   </div>
 </div>
 
 <div id="scrGame" class="screen">
   <div class="hud">
-    <span class="hud-prompt">Pull sphere</span>
-    <span class="hud-target" id="hudTarget">11</span>
+    <span class="hud-prompt" id="hudPrompt">Comes after</span>
+    <span class="hud-target" id="hudTarget">7</span>
   </div>
   <div class="hud-round" id="hudRound">1/4</div>
 
@@ -206,18 +262,22 @@ html, body{
   <div class="curtain-r"></div>
   <div class="spotlight"></div>
 
-  <div class="stage">
-    <span class="magician" id="magician">🧙</span>
-    <div class="top-hat" id="hat">
-      <div class="top-hat-mouth"></div>
-    </div>
+  <span class="magician" id="magician">🧙</span>
+
+  <div class="question-card" id="qcard">
+    <span class="qc-prompt" id="qPrompt">AFTER</span>
+    <span class="qc-number" id="qNum">7</span>
+    <span class="qc-arrow">→</span>
+    <span class="qc-question">?</span>
+    <span class="qc-answer" id="qAnswer">8</span>
   </div>
 
+  <div class="hat-stage"><div class="top-hat"></div></div>
   <div class="reveal-row" id="reveal"></div>
 
   <div class="progress-pill">✨ <span id="progress">0</span> / 16</div>
-  <div class="pool-label">MAGIC SPHERES</div>
-  <div class="pool" id="pool"></div>
+  <div class="choice-label">PICK THE ANSWER</div>
+  <div class="choices" id="choices"></div>
 
   <div class="banner" id="banner">Round 1</div>
 </div>
@@ -226,7 +286,7 @@ html, body{
   <div class="celeb-wrap">
     <div class="celeb-big">TA-DA!</div>
     <div class="title-hero">🎩</div>
-    <div class="celeb-count" id="celebCount">The grand finale!</div>
+    <div class="celeb-count" id="celebCount">All puzzles solved!</div>
     <button class="start-btn" id="btnAgain">🎩 Play Again</button>
   </div>
 </div>
@@ -238,38 +298,75 @@ html, body{
 const audio = new GameAudio({ base: '../audio/' });
 const FULL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 const COLORS = ['mc1','mc2','mc3','mc4','mc5','mc6'];
-const REVEALS = ['🐰','🕊️','🌹','🎀','🎲','🦄','🦋','🐱','🐶','🐹','🌟','🎨','🎵','🎂','🍭','💎','🪄','🐠','🧸','🐢'];
+const REVEALS = ['🐰','🕊️','🌹','🎀','🎲','🦄','🦋','🐱','🐶','🐹','🌟','🎨','🐠','🧸'];
 
-let roundIdx = 0, promptIdx = 0, pulled = 0;
+let roundIdx = 0, promptIdx = 0, solved = 0;
+let currentSeed = null;  // the X in "what comes after X"
+let currentOp = 'after'; // 'after' = X+1, 'before' = X-1
 let currentTarget = null;
-let promptList = [];
+let promptList = [];     // array of {seed, op} for this round
 let hintTimer = null;
-let poolEls = [];
+let choiceEls = [];
 let busy = false;
 
-function spawnPool(){
-  const pool = $('pool');
-  pool.innerHTML = '';
-  poolEls = [];
-  let nums = shuffle(FULL).slice(0, 6);
-  if(!nums.includes(currentTarget)){
-    nums[Math.floor(Math.random()*nums.length)] = currentTarget;
+function makePrompt(){
+  // alternate "after"/"before" with random seeds that keep the answer in 0-20
+  const op = Math.random() < 0.5 ? 'after' : 'before';
+  let seed;
+  if(op === 'after'){
+    seed = Math.floor(Math.random() * 20);  // 0-19, answer = seed+1
+  } else {
+    seed = 1 + Math.floor(Math.random() * 20);  // 1-20, answer = seed-1
   }
-  nums = shuffle(nums);
+  return { seed, op };
+}
+
+function buildPromptList(){
+  // 4 unique-feeling prompts per round; mix ops + seeds
+  const list = [];
+  while(list.length < 4){
+    const p = makePrompt();
+    if(!list.some(x => x.seed === p.seed && x.op === p.op)) list.push(p);
+  }
+  return list;
+}
+
+function spawnChoices(){
+  const wrap = $('choices');
+  wrap.innerHTML = '';
+  choiceEls = [];
+  // distractors: target ± 1, target ± 2, the seed itself, and a couple of random nearby numbers
+  const distractors = new Set();
+  distractors.add(currentTarget);
+  distractors.add(currentSeed);  // tests whether kid just picks the seed
+  if(currentTarget + 1 >= 0 && currentTarget + 1 <= 20) distractors.add(currentTarget + 1);
+  if(currentTarget - 1 >= 0 && currentTarget - 1 <= 20) distractors.add(currentTarget - 1);
+  // fill up to 6 with random nearby numbers in 0-20
+  while(distractors.size < 6){
+    const r = Math.max(0, Math.min(20, currentTarget + Math.floor(Math.random()*7) - 3));
+    distractors.add(r);
+  }
+  // if seed equals target (shouldn't happen) make sure target stays in
+  if(!distractors.has(currentTarget)) distractors.add(currentTarget);
+  const arr = shuffle([...distractors]).slice(0, 6);
+  // guarantee target is in arr
+  if(!arr.includes(currentTarget)){
+    arr[Math.floor(Math.random()*arr.length)] = currentTarget;
+  }
   const colors = shuffle(COLORS);
-  nums.forEach((n, i) => {
-    const sp = document.createElement('div');
-    sp.className = 'sphere';
-    sp.dataset.n = n;
-    sp.dataset.color = colors[i % colors.length];
-    sp.innerHTML = `<div class="sphere-disc ${colors[i % colors.length]}"><span class="sphere-num">${n}</span></div>`;
-    onTap(sp, () => handleSphereTap(sp, n));
-    pool.appendChild(sp);
-    poolEls.push(sp);
+  arr.forEach((n, i) => {
+    const c = document.createElement('div');
+    c.className = 'choice';
+    c.dataset.n = n;
+    c.dataset.color = colors[i % colors.length];
+    c.innerHTML = `<div class="choice-card ${colors[i % colors.length]}"><span class="choice-num">${n}</span></div>`;
+    onTap(c, () => handleChoiceTap(c, n));
+    wrap.appendChild(c);
+    choiceEls.push(c);
   });
 }
 
-function handleSphereTap(el, n){
+function handleChoiceTap(el, n){
   if(busy) return;
   if(n === currentTarget){
     busy = true;
@@ -278,7 +375,10 @@ function handleSphereTap(el, n){
     audio.clearQueue();
     audio.speakCategory('correct');
     clearTimeout(hintTimer);
-    flySphereIntoHat(el, n);
+    // Reveal the answer in the question card
+    $('qcard').classList.add('reveal');
+    $('qAnswer').textContent = n;
+    flyChoiceIntoHat(el, n);
   } else {
     el.classList.add('wobble');
     audio.tone('wrong');
@@ -286,29 +386,28 @@ function handleSphereTap(el, n){
     audio.speakCategory('wrong');
     setTimeout(() => el.classList.remove('wobble'), 600);
     setTimeout(() => {
-      audio.speakPhrase('which_number');
-      audio.speakNumber(currentTarget);
+      audio.speakPhrase(currentOp === 'after' ? 'what_comes_next' : 'what_comes_before');
+      audio.speakNumber(currentSeed);
     }, 1100);
   }
 }
 
-function flySphereIntoHat(el, n){
+function flyChoiceIntoHat(el, n){
   const sR = el.getBoundingClientRect();
-  const hatR = $('hat').getBoundingClientRect();
-  const tx = hatR.left + hatR.width/2;
-  const ty = hatR.top + hatR.height*0.3;
+  const hat = document.querySelector('.top-hat').getBoundingClientRect();
+  const tx = hat.left + hat.width/2;
+  const ty = hat.top + hat.height*0.4;
   const color = el.dataset.color;
   const fly = document.createElement('div');
-  fly.className = 'flying-sphere ' + color;
+  fly.className = 'flying-choice ' + color;
   fly.textContent = n;
   fly.style.left = '0'; fly.style.top = '0';
   fly.style.width  = sR.width + 'px';
   fly.style.height = sR.height + 'px';
   fly.style.transform = `translate(${sR.left}px, ${sR.top}px)`;
   document.body.appendChild(fly);
-  // arc up and into the hat
   const peakX = (sR.left + tx) / 2;
-  const peakY = Math.min(sR.top, ty) - 100;
+  const peakY = Math.min(sR.top, ty) - 80;
   fly.animate(
     [
       { transform: `translate(${sR.left}px, ${sR.top}px) scale(1) rotate(0)`, offset: 0 },
@@ -317,24 +416,30 @@ function flySphereIntoHat(el, n){
     ],
     { duration: 800, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
   );
+  // speak the full sentence: "what comes after seven is eight"
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase(currentOp === 'after' ? 'what_comes_next' : 'what_comes_before');
+    audio.speakNumber(currentSeed);
+    setTimeout(() => audio.speakNumber(currentTarget), 700);
+  }, 200);
   setTimeout(() => {
     fly.remove();
-    // poof + reveal an animal from the hat
     showPoof(tx, ty);
     addReveal();
     $('magician').classList.add('cheer');
     setTimeout(() => $('magician').classList.remove('cheer'), 700);
     audio.tone('ding');
-    pulled++;
-    $('progress').textContent = pulled;
+    solved++;
+    $('progress').textContent = solved;
     starBurst(tx, ty);
     burstConfetti(tx, ty, 12);
     promptIdx++;
     setTimeout(() => {
       busy = false;
-      if(pulled >= 16) finishGameFlow();
+      if(solved >= 16) finishGameFlow();
       else nextPrompt();
-    }, 600);
+    }, 900);
   }, 820);
 }
 
@@ -345,7 +450,6 @@ function showPoof(x, y){
   document.body.appendChild(p);
   setTimeout(() => p.remove(), 700);
 }
-
 function addReveal(){
   const row = $('reveal');
   const r = document.createElement('span');
@@ -359,13 +463,20 @@ function nextPrompt(){
     finishRound();
     return;
   }
-  currentTarget = promptList[promptIdx];
-  $('hudTarget').textContent = currentTarget;
-  spawnPool();
+  const p = promptList[promptIdx];
+  currentSeed = p.seed;
+  currentOp = p.op;
+  currentTarget = currentOp === 'after' ? currentSeed + 1 : currentSeed - 1;
+  $('qcard').classList.remove('reveal');
+  $('qNum').textContent = currentSeed;
+  $('qPrompt').textContent = currentOp === 'after' ? 'AFTER' : 'BEFORE';
+  $('hudPrompt').textContent = currentOp === 'after' ? 'Comes after' : 'Comes before';
+  $('hudTarget').textContent = currentSeed;
+  spawnChoices();
   setTimeout(() => {
     audio.clearQueue();
-    audio.speakPhrase('can_you_find');
-    audio.speakNumber(currentTarget);
+    audio.speakPhrase(currentOp === 'after' ? 'what_comes_next' : 'what_comes_before');
+    audio.speakNumber(currentSeed);
   }, 250);
   scheduleHint();
 }
@@ -373,25 +484,26 @@ function nextPrompt(){
 function scheduleHint(){
   clearTimeout(hintTimer);
   hintTimer = setTimeout(() => {
-    poolEls.forEach(s => {
-      if(Number(s.dataset.n) === currentTarget){
-        s.animate(
+    choiceEls.forEach(c => {
+      if(Number(c.dataset.n) === currentTarget){
+        c.animate(
           [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
           {duration:700, iterations:2}
         );
       }
     });
     audio.clearQueue();
-    audio.speakNumber(currentTarget);
+    audio.speakPhrase(currentOp === 'after' ? 'what_comes_next' : 'what_comes_before');
+    audio.speakNumber(currentSeed);
     scheduleHint();
-  }, 6500);
+  }, 7500);
 }
 
 function startRound(){
   promptIdx = 0;
   $('hudRound').textContent = (roundIdx+1) + '/4';
-  promptList = shuffle(FULL).slice(0, 4);
-  showBanner('Round ' + (roundIdx+1), 'Any number 0–20');
+  promptList = buildPromptList();
+  showBanner('Round ' + (roundIdx+1), 'What comes next?');
   setTimeout(nextPrompt, 1300);
 }
 
@@ -418,7 +530,7 @@ function finishGameFlow(){
 
 function showCeleb(){
   showScreen('scrCeleb');
-  $('celebCount').textContent = `${pulled} magical reveals!`;
+  $('celebCount').textContent = `${solved} number puzzles solved!`;
   audio.clearQueue();
   audio.speakCategory('game-complete');
   setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
@@ -426,21 +538,20 @@ function showCeleb(){
 }
 
 function startGame(){
-  roundIdx = 0; pulled = 0;
+  roundIdx = 0; solved = 0;
   $('progress').textContent = '0';
   $('reveal').innerHTML = '';
+  $('qcard').classList.remove('reveal');
   showScreen('scrGame');
   audio.startMusic();
   audio.speakCategory('greetings');
   setTimeout(startRound, 1400);
 }
 
-// star background
 (function(){
   for(let i = 0; i < 40; i++){
     const s = document.createElement('div');
-    s.className = 'star-bg';
-    s.textContent = '✦';
+    s.className = 'star-bg'; s.textContent = '✦';
     s.style.top = Math.random()*60 + 'vh';
     s.style.left = Math.random()*100 + 'vw';
     s.style.fontSize = (8 + Math.random()*16) + 'px';

@@ -210,8 +210,9 @@ function onTap(el, fn){
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
+  // Home bubble removed — the top-left ← Home link is the only exit (kept off the play area).
   const bub = $('homeBubble');
-  if(bub) bub.style.display = (id === 'scrGame') ? 'flex' : 'none';
+  if(bub) bub.style.display = 'none';
 }
 function showBanner(text, sub){
   const b = $('banner');

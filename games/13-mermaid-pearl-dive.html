@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0e7490">
-<title>Mermaid Pearl Dive · aha!</title>
+<title>Shark Escape · aha!</title>
 <link rel="stylesheet" href="../js/engine.css">
 <style>
 html, body{
@@ -13,161 +13,162 @@ html, body{
   color: #ecfeff;
 }
 .back-home-btn{ color:#134e4a; border-color:#fde047; background:#ecfeff; }
-.home-bubble{ border-color:#fde047; }
 
-/* bubbles drifting up */
 .bubble{
   position: absolute; pointer-events: none;
-  width: 14px; height: 14px;
-  border-radius: 50%;
+  width: 14px; height: 14px; border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.15));
   animation: bubbleRise var(--dur,7s) linear infinite var(--delay,0s);
 }
 @keyframes bubbleRise{
-  0%   { transform: translateY(0) scale(0.6); opacity: 0; }
-  10%  { opacity: 0.8; }
-  90%  { opacity: 0.6; }
-  100% { transform: translateY(-110vh) scale(1.1); opacity: 0; }
+  0%{ transform: translateY(0) scale(0.6); opacity: 0; }
+  10%{ opacity: 0.8; }
+  100%{ transform: translateY(-110vh) scale(1.1); opacity: 0; }
 }
 
-.seaweed{
-  position: absolute; bottom: 0; pointer-events: none;
-  font-size: clamp(60px, 14vw, 100px);
-  filter: drop-shadow(0 0 12px rgba(34,197,94,0.4));
-  animation: seaSway 3.5s ease-in-out infinite;
+/* The "race track" — mermaid goes left → right toward coral reef */
+.track-area{
+  position: absolute; top: 18vh; left: 0; right: 0; height: 36vh; z-index: 3;
 }
-.seaweed.s1{ left: 2vw; }
-.seaweed.s2{ right: 2vw; animation-delay: -1.5s; }
-@keyframes seaSway{ 0%,100%{ transform: rotate(-6deg) } 50%{ transform: rotate(6deg) } }
-
-/* mermaid swimming at top */
-.mermaid{
-  position: absolute; top: 11vh; left: 50%;
-  transform: translateX(-50%);
-  font-size: clamp(72px, 18vw, 120px);
-  z-index: 5;
-  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.4));
-  animation: mermaidSwim 3s ease-in-out infinite;
-}
-@keyframes mermaidSwim{ 0%,100%{ transform: translate(-50%, 0) rotate(-4deg) } 50%{ transform: translate(-50%, -8px) rotate(4deg) } }
-.mermaid.catch{ animation: mermaidCatch 0.7s var(--bounce); }
-@keyframes mermaidCatch{
-  0%   { transform: translateX(-50%) scale(1) rotate(0); }
-  30%  { transform: translateX(-50%) scale(1.2) rotate(-10deg); }
-  60%  { transform: translateX(-50%) scale(1.1) rotate(10deg); }
-  100% { transform: translateX(-50%) scale(1); }
-}
-
-/* treasure chest beside the mermaid (where pearls are collected) */
-.treasure{
-  position: fixed; top: 12vh; right: 6vw;
-  z-index: 6;
-  width: clamp(70px, 16vw, 100px);
-  height: clamp(50px, 12vw, 76px);
-  background: linear-gradient(180deg, #92400e, #422006);
-  border: 4px solid #fbbf24;
-  border-radius: 6px 6px 12px 12px;
-  display: flex; align-items: flex-end; justify-content: center;
-  padding-bottom: 4px;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
-  overflow: hidden;
-}
-.treasure::before{
-  content:''; position:absolute; top: -8px; left: -2px; right: -2px;
-  height: 18px;
-  background: linear-gradient(180deg, #b45309, #92400e);
-  border: 4px solid #fbbf24; border-bottom: none;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-}
-.treasure-fill{
-  width: 90%; height: 0;
-  background: linear-gradient(180deg, #fef3c7 0%, #fde047 100%);
-  border-radius: 4px;
-  box-shadow: 0 0 12px #fde047;
-  transition: height 0.5s var(--bounce);
-}
-
-.pearl-count{
-  position: fixed; top: 14vh; right: 6vw;
-  transform: translateX(50%);
-  z-index: 7;
-  background: rgba(254,240,138,0.95);
-  border: 3px solid #134e4a; border-radius: 16px;
-  padding: 4px 10px;
-  font-size: 12px; font-weight: 900; color:#134e4a;
+.track-line{
+  position: absolute; top: 50%; left: 6vw; right: 6vw;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0 10px, transparent 10px 20px);
   pointer-events: none;
 }
+.reef{
+  position: absolute; top: 25%; right: 1vw;
+  font-size: clamp(60px, 14vw, 100px);
+  filter: drop-shadow(0 0 18px #fde047);
+  animation: reefGlow 2.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes reefGlow{ 0%,100%{ filter: drop-shadow(0 0 14px #fde047); transform: scale(1) } 50%{ filter: drop-shadow(0 0 26px #fde047); transform: scale(1.05) } }
 
-/* oysters on the ocean floor (grid) */
-.ocean-floor{
-  position: absolute; bottom: 9vh; left: 0; right: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(10px, 2.5vw, 20px);
-  padding: 0 clamp(14px, 4vw, 32px);
-  z-index: 3;
+/* mermaid swims left-to-right as you tap correct shells */
+.mermaid{
+  position: absolute; top: 38%;
+  left: 8%;
+  font-size: clamp(60px, 14vw, 100px);
+  z-index: 5;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.4));
+  transition: left 0.7s cubic-bezier(0.34,1.56,0.64,1);
+  animation: mermaidSwim 1.8s ease-in-out infinite;
+}
+@keyframes mermaidSwim{ 0%,100%{ transform: translateY(-4px) rotate(-5deg) } 50%{ transform: translateY(4px) rotate(5deg) } }
+.mermaid.swim-fwd{ animation: swimFwd 0.7s var(--bounce); }
+@keyframes swimFwd{ 0%{ transform: translateY(0) rotate(0) scale(1); } 50%{ transform: translateY(-12px) rotate(-12deg) scale(1.1); } 100%{ transform: translateY(0) rotate(0) scale(1); } }
+
+/* shark chases from behind — closes the gap on a slow timer */
+.shark{
+  position: absolute; top: 42%;
+  right: 75%;
+  font-size: clamp(70px, 16vw, 110px);
+  z-index: 4;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
+  transition: right 0.8s cubic-bezier(0.45,0.05,0.55,0.95);
+  animation: sharkSwim 1.4s ease-in-out infinite;
+  transform-origin: center;
+}
+@keyframes sharkSwim{ 0%,100%{ transform: scaleX(-1) translateY(-2px) rotate(-3deg) } 50%{ transform: scaleX(-1) translateY(2px) rotate(3deg) } }
+.shark.snap{ animation: sharkSnap 0.5s ease-in-out; }
+@keyframes sharkSnap{ 0%,100%{ transform: scaleX(-1) scale(1) } 50%{ transform: scaleX(-1) scale(1.15) rotate(-8deg) } }
+.shark.flee{ animation: sharkFlee 0.6s var(--bounce); }
+@keyframes sharkFlee{ 0%{ transform: scaleX(-1) scale(1); } 50%{ transform: scaleX(-1) scale(0.85) rotate(15deg); } 100%{ transform: scaleX(-1) scale(1); } }
+
+/* danger flash when shark is too close */
+.danger-flash{
+  position: fixed; inset: 0; pointer-events: none; z-index: 49;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(220,38,38,0.25) 100%);
+  opacity: 0; transition: opacity 0.4s;
+}
+.danger-flash.on{ opacity: 1; animation: dangerPulse 0.8s ease-in-out infinite; }
+@keyframes dangerPulse{ 0%,100%{ opacity: 0.4 } 50%{ opacity: 0.9 } }
+
+/* progress meter — visualises how close mermaid is to safety */
+.escape-meter{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  width: clamp(180px, 50vw, 280px);
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #134e4a; border-radius: 999px;
+  padding: 4px;
+  display: flex; align-items: center;
+}
+.escape-meter-bar{
+  flex: 1; height: 14px;
+  background: rgba(15,118,110,0.2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.escape-meter-fill{
+  height: 100%;
+  background: linear-gradient(90deg, #fde047 0%, #f59e0b 100%);
+  border-radius: 999px;
+  width: 0%;
+  transition: width 0.6s var(--bounce);
+}
+.escape-meter-label{
+  font-size: 10px; font-weight: 900; color:#134e4a;
+  margin-left: 8px; white-space: nowrap;
 }
 
-.oyster{
+/* shells along the ocean floor — six numbered shells the kid chooses from */
+.shell-row-label{
+  position: fixed;
+  bottom: calc(2vh + clamp(80px, 18vw, 130px));
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #134e4a; border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 900; color:#134e4a;
+  letter-spacing: 1px;
+}
+.shell-row{
+  position: fixed; bottom: 2vh; left: 0; right: 0;
+  z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 2vw, 14px);
+  padding: 0 clamp(8px, 3vw, 18px);
+}
+.shell{
   position: relative;
-  aspect-ratio: 1 / 0.9;
+  width: clamp(72px, 16vw, 110px);
+  aspect-ratio: 1;
   cursor: pointer; touch-action: manipulation;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.15s var(--bounce);
 }
-.oyster:active{ transform: scale(0.93); }
-
-.oyster-bottom{
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: 60%;
-  background: linear-gradient(180deg, #d1d5db 0%, #6b7280 70%, #374151 100%);
-  border: 3px solid #1f2937;
-  border-radius: 50% 50% 30% 30% / 100% 100% 0 0;
-  box-shadow: inset 0 -6px 12px rgba(0,0,0,0.4);
-}
-.oyster-top{
-  position: absolute; top: 8%; left: 0; right: 0;
-  height: 56%;
-  background: linear-gradient(180deg, #9ca3af 0%, #4b5563 100%);
-  border: 3px solid #1f2937;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-  transform-origin: bottom center;
-  transition: transform 0.5s var(--bounce);
-  z-index: 3;
-}
-.oyster.opened .oyster-top{ transform: rotate(-45deg) translateY(-6px); }
-.oyster.opened{ animation: oysterPop 0.6s var(--bounce); }
-@keyframes oysterPop{ 0%{ transform: translateY(0) } 30%{ transform: translateY(-8px) scale(1.06) } 100%{ transform: translateY(0) } }
-.oyster.wobble{ animation: wobble 0.5s ease-in-out; }
-.pearl{
-  position: absolute; bottom: 32%; left: 50%;
-  transform: translateX(-50%);
-  width: 60%; height: 50%;
-  z-index: 2;
-  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fdf2f8 40%, #fbcfe8 80%);
+.shell:active{ transform: scale(0.92); }
+.shell-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 35% 30%, #fef2f2 0%, #fbcfe8 40%, #ec4899 100%);
+  border: 4px solid #fff;
   border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 0 18px #fbcfe8, inset -6px -6px 12px rgba(0,0,0,0.15);
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(28px, 7vw, 44px); color:#831843;
-  -webkit-text-stroke: 2px #fff;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.4),
+              inset -8px -10px 14px rgba(0,0,0,0.2),
+              0 0 18px rgba(252,211,77,0.3);
+}
+.shell-disc::after{
+  content: '';
+  position: absolute; inset: 8% 8% 50% 8%;
+  background:
+    repeating-linear-gradient(110deg, transparent 0 7px, rgba(255,255,255,0.4) 7px 9px);
+  border-radius: 50% 50% 10% 10% / 50% 50% 20% 20%;
+  opacity: 0.7;
+}
+.shell-num{
+  position: relative; z-index: 3;
+  font-size: clamp(30px, 7.5vw, 48px); color:#fff;
+  -webkit-text-stroke: 2.5px rgba(0,0,0,0.5);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
   font-weight: 900;
 }
-
-/* pearl that shoots up to the mermaid */
-.flying-pearl{
-  position: fixed;
-  width: clamp(40px, 10vw, 60px); height: clamp(40px, 10vw, 60px);
-  background: radial-gradient(circle at 35% 30%, #fff, #fbcfe8);
-  border: 3px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 0 18px #fde047;
-  display: flex; align-items: center; justify-content: center;
-  font-size: clamp(20px, 5vw, 30px); font-weight: 900; color:#831843;
-  -webkit-text-stroke: 1.5px #fff;
-  z-index: 200; pointer-events: none;
-}
+.shell.wobble{ animation: wobble 0.5s ease-in-out; }
+.shell.used{ pointer-events: none; opacity: 0.85; }
 
 .celeb-big{ -webkit-text-stroke:3px #134e4a; text-shadow:4px 6px 0 #fde047; }
 .celeb-count{ color:#ecfeff; text-shadow:2px 2px 0 #134e4a; }
@@ -176,41 +177,48 @@ html, body{
 <body>
 
 <a href="../index.html" class="back-home-btn">← Home</a>
-<a href="../index.html" class="home-bubble" id="homeBubble" style="display:none">🏠</a>
 
 <div id="scrTitle" class="screen active">
   <div class="title-wrap">
-    <div class="title-big">PEARL DIVE</div>
+    <div class="title-big">SHARK ESCAPE</div>
     <div class="title-hero">🧜‍♀️</div>
-    <div class="title-sub">Open the right oyster · Catch the pearl!</div>
-    <button class="start-btn" id="btnStart">🧜‍♀️ Dive Down</button>
+    <div class="title-sub">Help mermaid reach the reef before the shark catches her!</div>
+    <button class="start-btn" id="btnStart">🧜‍♀️ Quick! Swim!</button>
   </div>
 </div>
 
 <div id="scrGame" class="screen">
   <div class="hud">
-    <span class="hud-prompt">Open oyster</span>
+    <span class="hud-prompt">Tap shell</span>
     <span class="hud-target" id="hudTarget">15</span>
   </div>
   <div class="hud-round" id="hudRound">1/4</div>
 
-  <div class="mermaid" id="mermaid">🧜‍♀️</div>
-  <div class="treasure"><div class="treasure-fill" id="chest"></div></div>
-  <div class="pearl-count">🦪 <span id="pearlCount">0</span></div>
+  <div class="track-area">
+    <div class="track-line"></div>
+    <div class="reef">🪸</div>
+    <span class="shark" id="shark">🦈</span>
+    <span class="mermaid" id="mermaid">🧜‍♀️</span>
+  </div>
 
-  <div class="seaweed s1">🪸</div>
-  <div class="seaweed s2">🪸</div>
+  <div class="escape-meter">
+    <div class="escape-meter-bar"><div class="escape-meter-fill" id="meter"></div></div>
+    <div class="escape-meter-label" id="meterLabel">SWIM!</div>
+  </div>
 
-  <div class="ocean-floor" id="floor"></div>
+  <div class="shell-row-label">PICK A SHELL</div>
+  <div class="shell-row" id="shells"></div>
+
+  <div class="danger-flash" id="dangerFlash"></div>
 
   <div class="banner" id="banner">Round 1</div>
 </div>
 
 <div id="scrCeleb" class="screen">
   <div class="celeb-wrap">
-    <div class="celeb-big">PEARLS COLLECTED!</div>
+    <div class="celeb-big">SAFE AT THE REEF!</div>
     <div class="title-hero">🧜‍♀️</div>
-    <div class="celeb-count" id="celebCount">Treasure chest full!</div>
+    <div class="celeb-count" id="celebCount">Mermaid made it!</div>
     <button class="start-btn" id="btnAgain">🧜‍♀️ Play Again</button>
   </div>
 </div>
@@ -222,42 +230,71 @@ html, body{
 const audio = new GameAudio({ base: '../audio/' });
 const NUMS = [12,13,14,15,16,17];
 
-let roundIdx = 0, promptIdx = 0, pearls = 0;
+// Mermaid escape state
+//   mermaidPct: 8 → 92 over 16 correct taps (88px range)
+//   sharkPct (from right): starts at 75% (far behind), creeps up by ~3% per second
+//   correct tap → mermaid+5% forward, shark backs up ~6%
+//   shark cannot go past 0% — if it gets to mermaidPct - 4, danger flash shows
+const TOTAL_STEPS = 16;
+let mermaidPct = 8;
+let sharkPct   = 75;  // shark distance from RIGHT edge
+let sharkTimer = null;
+const SHARK_CREEP_PER_SEC = 1.8;   // % per second
+const STEP_MERMAID = (92 - 8) / TOTAL_STEPS;
+const STEP_PUSHBACK = 7;
+
+let roundIdx = 0, promptIdx = 0, escapeSteps = 0;
 let currentTarget = null;
 let promptList = [];
 let hintTimer = null;
-let oysterEls = [];
+let shellEls = [];
 let busy = false;
+let lastSharkTick = 0;
 
-function spawnOysters(){
-  const floor = $('floor');
-  floor.innerHTML = '';
-  oysterEls = [];
+function spawnShells(){
+  const row = $('shells');
+  row.innerHTML = '';
+  shellEls = [];
   shuffle(NUMS).forEach(n => {
-    const o = document.createElement('div');
-    o.className = 'oyster';
-    o.dataset.n = n;
-    o.innerHTML = `
-      <div class="oyster-bottom"></div>
-      <div class="pearl">${n}</div>
-      <div class="oyster-top"></div>`;
-    onTap(o, () => handleOysterTap(o, n));
-    floor.appendChild(o);
-    oysterEls.push(o);
+    const s = document.createElement('div');
+    s.className = 'shell';
+    s.dataset.n = n;
+    s.innerHTML = `<div class="shell-disc"><span class="shell-num">${n}</span></div>`;
+    onTap(s, () => handleShellTap(s, n));
+    row.appendChild(s);
+    shellEls.push(s);
   });
 }
 
-function handleOysterTap(el, n){
-  if(busy || el.classList.contains('opened')) return;
+function handleShellTap(el, n){
+  if(busy) return;
   if(n === currentTarget){
     busy = true;
-    el.classList.add('opened');
-    audio.tone('sparkle');
+    el.classList.add('used');
+    audio.tone('whoosh');
     audio.clearQueue();
     audio.speakCategory('correct');
     clearTimeout(hintTimer);
-    // After oyster opens, the pearl flies UP to the mermaid + into the chest
-    setTimeout(() => sendPearlUp(el, n), 400);
+    // Mermaid sprints forward, shark falls back
+    escapeSteps++;
+    mermaidPct = Math.min(92, mermaidPct + STEP_MERMAID);
+    sharkPct = Math.min(85, sharkPct + STEP_PUSHBACK);
+    $('mermaid').style.left = mermaidPct + '%';
+    $('shark').style.right = sharkPct + '%';
+    $('mermaid').classList.add('swim-fwd');
+    $('shark').classList.add('flee');
+    setTimeout(() => $('mermaid').classList.remove('swim-fwd'), 700);
+    setTimeout(() => $('shark').classList.remove('flee'), 600);
+    updateMeter();
+    const mR = $('mermaid').getBoundingClientRect();
+    starBurst(mR.left + mR.width/2, mR.top + mR.height/2);
+    burstConfetti(mR.left + mR.width/2, mR.top + mR.height/2, 10);
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(escapeSteps >= TOTAL_STEPS) finishEscape();
+      else nextPrompt();
+    }, 700);
   } else {
     el.classList.add('wobble');
     audio.tone('wrong');
@@ -271,49 +308,36 @@ function handleOysterTap(el, n){
   }
 }
 
-function sendPearlUp(el, n){
-  const pearlR = el.querySelector('.pearl').getBoundingClientRect();
-  const startX = pearlR.left;
-  const startY = pearlR.top;
-  // target: the treasure chest opening
-  const chestR = $('chest').getBoundingClientRect();
-  const endX = chestR.left + chestR.width/2 - pearlR.width/2;
-  const endY = chestR.top  - pearlR.height/2;
-  const fly = document.createElement('div');
-  fly.className = 'flying-pearl';
-  fly.textContent = n;
-  fly.style.left = '0'; fly.style.top = '0';
-  fly.style.width  = pearlR.width + 'px';
-  fly.style.height = pearlR.height + 'px';
-  fly.style.transform = `translate(${startX}px, ${startY}px)`;
-  document.body.appendChild(fly);
-  // Curving arc up through the water — through the mermaid's hand area
-  const merR = $('mermaid').getBoundingClientRect();
-  const peakX = merR.left + merR.width/2 - pearlR.width/2;
-  const peakY = merR.top  + merR.height*0.6;
-  fly.animate(
-    [
-      { transform: `translate(${startX}px, ${startY}px) scale(1) rotate(0)`, offset: 0 },
-      { transform: `translate(${peakX}px, ${peakY}px) scale(1.1) rotate(180deg)`, offset: 0.55 },
-      { transform: `translate(${endX}px, ${endY}px) scale(0.6) rotate(360deg)`, opacity: 0, offset: 1 }
-    ],
-    { duration: 900, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
-  );
-  $('mermaid').classList.add('catch');
-  setTimeout(() => $('mermaid').classList.remove('catch'), 700);
-  setTimeout(() => {
-    fly.remove();
-    pearls++;
-    $('pearlCount').textContent = pearls;
-    const pct = Math.min(100, (pearls / 16) * 100);
-    $('chest').style.height = pct + '%';
-    audio.tone('ding');
-    const cR = $('chest').getBoundingClientRect();
-    starBurst(cR.left + cR.width/2, cR.top + cR.height/2);
-    promptIdx++;
-    busy = false;
-    setTimeout(nextPrompt, 400);
-  }, 900);
+function updateMeter(){
+  // % toward safety (the reef at the right end)
+  const pct = (escapeSteps / TOTAL_STEPS) * 100;
+  $('meter').style.width = pct + '%';
+  $('meterLabel').textContent = pct >= 100 ? 'SAFE!' : 'SWIM! ' + Math.round(pct) + '%';
+}
+
+function tickShark(){
+  // Slowly close the gap regardless of taps. Cap so it never quite catches mermaid.
+  const now = performance.now();
+  const dt = lastSharkTick ? (now - lastSharkTick) / 1000 : 0.5;
+  lastSharkTick = now;
+  sharkPct = Math.max(0, sharkPct - SHARK_CREEP_PER_SEC * dt);
+  $('shark').style.right = sharkPct + '%';
+  // Convert to "distance from mermaid" — mermaidPct is from LEFT, sharkPct from RIGHT.
+  // Shark's left edge in % from left = 100 - sharkPct.
+  const sharkLeftPct = 100 - sharkPct;
+  const gap = sharkLeftPct - mermaidPct;
+  const inDanger = gap < 12;  // shark within ~12% of mermaid
+  $('dangerFlash').classList.toggle('on', inDanger);
+  if(inDanger){
+    $('shark').classList.add('snap');
+    setTimeout(() => $('shark').classList.remove('snap'), 500);
+  }
+  // If shark "catches" mermaid (gap < 0), gently teleport it back — no fail state
+  if(gap < -2){
+    sharkPct = 100 - mermaidPct - 18;  // bump back
+    $('shark').style.right = sharkPct + '%';
+    audio.tone('whoosh');
+  }
 }
 
 function nextPrompt(){
@@ -323,10 +347,10 @@ function nextPrompt(){
   }
   currentTarget = promptList[promptIdx];
   $('hudTarget').textContent = currentTarget;
-  spawnOysters();
+  spawnShells();
   setTimeout(() => {
     audio.clearQueue();
-    audio.speakPhrase('can_you_find');
+    audio.speakPhrase('tap_the_number');
     audio.speakNumber(currentTarget);
   }, 250);
   scheduleHint();
@@ -335,9 +359,9 @@ function nextPrompt(){
 function scheduleHint(){
   clearTimeout(hintTimer);
   hintTimer = setTimeout(() => {
-    oysterEls.forEach(o => {
-      if(Number(o.dataset.n) === currentTarget && !o.classList.contains('opened')){
-        o.animate(
+    shellEls.forEach(s => {
+      if(Number(s.dataset.n) === currentTarget && !s.classList.contains('used')){
+        s.animate(
           [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
           {duration:700, iterations:2}
         );
@@ -363,15 +387,28 @@ function finishRound(){
   audio.clearQueue();
   audio.speakCategory('round-complete');
   if(roundIdx >= 4){
-    setTimeout(showCeleb, 1100);
+    setTimeout(finishEscape, 700);
   } else {
     setTimeout(startRound, 1500);
   }
 }
 
+function finishEscape(){
+  // Mermaid reaches the reef, shark waves and swims away
+  clearInterval(sharkTimer);
+  $('dangerFlash').classList.remove('on');
+  $('mermaid').style.left = '92%';
+  $('shark').style.right = '110%';
+  audio.tone('sparkle');
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1800);
+}
+
 function showCeleb(){
   showScreen('scrCeleb');
-  $('celebCount').textContent = `${pearls} pearls in the chest!`;
+  $('celebCount').textContent = `Mermaid escaped in ${escapeSteps} swims!`;
   audio.clearQueue();
   audio.speakCategory('game-complete');
   setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
@@ -379,13 +416,20 @@ function showCeleb(){
 }
 
 function startGame(){
-  roundIdx = 0; pearls = 0;
-  $('pearlCount').textContent = '0';
-  $('chest').style.height = '0%';
+  roundIdx = 0; escapeSteps = 0;
+  mermaidPct = 8; sharkPct = 75;
+  $('mermaid').style.left = mermaidPct + '%';
+  $('shark').style.right = sharkPct + '%';
+  $('dangerFlash').classList.remove('on');
+  updateMeter();
   showScreen('scrGame');
   audio.startMusic();
   audio.speakCategory('greetings');
   setTimeout(startRound, 1400);
+  // start shark creep
+  lastSharkTick = 0;
+  if(sharkTimer) clearInterval(sharkTimer);
+  sharkTimer = setInterval(tickShark, 250);
 }
 
 // bubble background
@@ -397,7 +441,6 @@ function startGame(){
     b.style.left = (Math.random()*100) + 'vw';
     b.style.bottom = '0';
     b.style.setProperty('--dur', (5 + Math.random()*4) + 's');
-    b.style.setProperty('--delay', '0s');
     b.style.width = (8 + Math.random()*16) + 'px';
     b.style.height = b.style.width;
     document.body.appendChild(b);
