@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#4ade80">
+<title>Count the Sheep · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #dbeafe 0%, #bae6fd 30%, #d9f99d 70%, #4ade80 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fde047; }
+
+.sun{ position: absolute; top: 11vh; right: 8vw; font-size: clamp(50px, 12vw, 80px); filter: drop-shadow(0 0 25px #fde047); animation: heroFloat 3s ease-in-out infinite; }
+.cloud{ position: absolute; pointer-events: none; opacity: 0.7; font-size: clamp(34px, 8vw, 56px); animation: cloudDrift linear infinite; }
+@keyframes cloudDrift{ from{ transform: translateX(-150px) } to { transform: translateX(110vw) } }
+
+.shepherd{
+  position: absolute; top: 12vh; left: 6vw;
+  font-size: clamp(50px, 12vw, 80px);
+  z-index: 5;
+  filter: drop-shadow(0 5px 12px rgba(0,0,0,0.25));
+  animation: heroFloat 2.4s ease-in-out infinite;
+}
+.shepherd.cheer{ animation: cheer 0.7s var(--bounce); }
+@keyframes cheer{ 0%{transform:scale(1)} 30%{transform:scale(1.2) rotate(-10deg)} 60%{transform:scale(1.1) rotate(10deg)} 100%{transform:scale(1)} }
+
+.target-pill{
+  position: absolute; top: 12vh; right: 4vw;
+  z-index: 6;
+  background: #fff; color:#14532d;
+  border: 4px solid #14532d; border-radius: 12px;
+  padding: 6px 14px;
+  font-size: 11px; font-weight: 900;
+  text-align: center; letter-spacing: 1px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.target-pill-num{
+  font-size: clamp(40px, 10vw, 60px); color:#dc2626;
+  -webkit-text-stroke: 2.5px #14532d;
+  text-shadow: 2px 3px 0 #14532d;
+  font-weight: 900; line-height: 1; margin: 4px 0;
+}
+
+/* the meadow with 20 sheep arranged in a grid */
+.meadow{
+  position: absolute; top: 24vh; left: 0; right: 0; bottom: 18vh;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(4px, 1.2vw, 10px);
+  padding: clamp(8px, 2vw, 14px);
+  align-content: center;
+}
+.sheep{
+  position: relative;
+  aspect-ratio: 1;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+  border: 3px solid #475569; border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.18), inset -4px -6px 10px rgba(0,0,0,0.1);
+  transition: transform 0.15s var(--bounce);
+}
+.sheep:active{ transform: scale(0.92); }
+.sheep::before{
+  content: '🐑'; position: absolute;
+  font-size: clamp(22px, 5.5vw, 36px);
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+}
+.sheep-num{
+  font-size: clamp(13px, 3.4vw, 20px); color:#1e293b;
+  -webkit-text-stroke: 1px #fff;
+  text-shadow: 1px 1px 0 #fff;
+  font-weight: 900;
+  position: absolute; bottom: 2px; right: 4px;
+  background: #fff; padding: 1px 4px; border-radius: 6px;
+  border: 1.5px solid #475569;
+  z-index: 2;
+}
+.sheep.counted{
+  background: linear-gradient(180deg, #fde047, #f59e0b);
+  border-color: #fbbf24;
+  animation: countedPop 0.5s var(--bounce);
+  pointer-events: none;
+}
+@keyframes countedPop{ 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
+.sheep.counted .sheep-num{
+  background: #dc2626; color: #fff; border-color: #fff;
+}
+.sheep.wobble{ animation: wobble 0.5s ease-in-out; }
+
+/* count display */
+.count-display{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #fde047, #fbbf24);
+  border: 5px solid #14532d; border-radius: 22px;
+  padding: 8px 22px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.count-current{
+  font-size: clamp(46px, 12vw, 68px); color: #16a34a;
+  -webkit-text-stroke: 3px #14532d;
+  text-shadow: 2px 3px 0 #14532d;
+  font-weight: 900; line-height: 1;
+}
+.count-of{
+  font-size: 13px; color:#14532d; font-weight: 900;
+  letter-spacing: 1px;
+}
+.count-target{
+  font-size: clamp(30px, 7vw, 44px); color: #14532d;
+  font-weight: 900; line-height: 1;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #14532d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#14532d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">COUNT THE SHEEP</div>
+    <div class="title-hero">🐑</div>
+    <div class="title-sub">Tap sheep one by one · Count up to the number!</div>
+    <button class="start-btn" id="btnStart">🐑 Start Counting</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud" style="display:none"></div>
+  <span class="shepherd" id="shepherd">🧑‍🌾</span>
+
+  <div class="target-pill">
+    COUNT TO
+    <div class="target-pill-num" id="targetNum">14</div>
+  </div>
+
+  <div class="meadow" id="meadow"></div>
+
+  <div class="count-display">
+    <span class="count-current" id="counter">0</span>
+    <span class="count-of">OF</span>
+    <span class="count-target" id="targetSmall">14</span>
+  </div>
+
+  <div class="progress-pill">🏆 <span id="progress">0</span> / 4</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">FLOCK COUNTED!</div>
+    <div class="title-hero">🐑</div>
+    <div class="celeb-count" id="celebCount">All counts done!</div>
+    <button class="start-btn" id="btnAgain">🐑 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+
+let roundIdx = 0, completed = 0;
+let target = 14;
+let counted = 0;
+let nextNum = 1;
+let busy = false;
+
+function pickTarget(){
+  // pick a target in 5..20 (counting up to small numbers is less interesting)
+  // each round increases challenge
+  const ranges = [
+    [5, 9],    // round 1: count to 5-9
+    [8, 13],   // round 2: 8-13
+    [12, 17],  // round 3: 12-17
+    [15, 20]   // round 4: 15-20
+  ];
+  const [lo, hi] = ranges[Math.min(roundIdx, 3)];
+  return lo + Math.floor(Math.random() * (hi - lo + 1));
+}
+
+function spawnMeadow(){
+  const m = $('meadow');
+  m.innerHTML = '';
+  // 20 sheep, numbered 1-20 in random positions
+  // The kid needs to tap them in numerical order 1, 2, 3, ..., up to target
+  const positions = shuffle([...Array(20).keys()].map(i => i + 1));  // 1..20 shuffled
+  positions.forEach(n => {
+    const s = document.createElement('div');
+    s.className = 'sheep';
+    s.dataset.n = n;
+    s.innerHTML = `<span class="sheep-num">${n}</span>`;
+    onTap(s, () => handleSheepTap(s, n));
+    m.appendChild(s);
+  });
+}
+
+function handleSheepTap(el, n){
+  if(busy || el.classList.contains('counted')) return;
+  if(n === nextNum){
+    el.classList.add('counted');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakNumber(n);
+    counted++;
+    nextNum++;
+    $('counter').textContent = counted;
+    const r = el.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    if(counted >= target){
+      // round complete!
+      busy = true;
+      audio.clearQueue();
+      audio.speakCategory('correct');
+      completed++;
+      $('progress').textContent = completed;
+      $('shepherd').classList.add('cheer');
+      setTimeout(() => $('shepherd').classList.remove('cheer'), 700);
+      burstConfetti(innerWidth/2, innerHeight*0.4, 26);
+      roundIdx++;
+      if(roundIdx >= 4){
+        setTimeout(showCeleb, 1500);
+      } else {
+        setTimeout(startRound, 1700);
+      }
+    }
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('count_with_me');
+      setTimeout(() => audio.speakNumber(nextNum), 500);
+    }, 1100);
+  }
+}
+
+function startRound(){
+  busy = false;
+  target = pickTarget();
+  counted = 0; nextNum = 1;
+  $('targetNum').textContent = target;
+  $('targetSmall').textContent = target;
+  $('counter').textContent = '0';
+  spawnMeadow();
+  showBanner('Round ' + (roundIdx+1), 'Count to ' + target);
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('count_with_me');
+    setTimeout(() => audio.speakNumber(target), 500);
+  }, 1300);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${completed} flocks counted!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; completed = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+(function(){
+  for(let i = 0; i < 4; i++){
+    const c = document.createElement('div');
+    c.className = 'cloud'; c.textContent = pick(['☁️','⛅']);
+    c.style.top = (4 + Math.random()*18) + 'vh';
+    c.style.animationDuration = (40 + Math.random()*30) + 's';
+    c.style.animationDelay = (-Math.random()*60) + 's';
+    document.body.appendChild(c);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

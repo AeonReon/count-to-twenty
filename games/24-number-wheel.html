@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#dc2626">
+<title>Number Wheel · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background:
+    repeating-linear-gradient(90deg, #fef3c7 0 40px, #fde68a 40px 80px),
+    #fef3c7;
+  color: #7f1d1d;
+}
+.back-home-btn{ color:#7f1d1d; border-color:#fde047; background:#fff; }
+
+.tent{
+  position: absolute; top: 4vh; left: 50%;
+  transform: translateX(-50%);
+  width: clamp(220px, 60vw, 360px); height: clamp(80px, 18vw, 130px);
+  z-index: 2; pointer-events: none;
+  background: repeating-conic-gradient(from -90deg, #dc2626 0deg 30deg, #fef3c7 30deg 60deg);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
+}
+.tent::before{
+  content:'🎯'; position: absolute; top: 32%; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(28px, 7vw, 44px);
+  filter: drop-shadow(0 0 8px #fff);
+}
+
+/* the wheel */
+.wheel-wrap{
+  position: absolute; top: 21vh; left: 50%;
+  transform: translateX(-50%);
+  width: clamp(260px, 70vw, 380px);
+  height: clamp(260px, 70vw, 380px);
+  z-index: 4;
+}
+.pointer{
+  position: absolute; top: -10px; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(40px, 10vw, 56px);
+  z-index: 6; pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+.wheel{
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 8px solid #7f1d1d;
+  background:
+    conic-gradient(
+      #fda4af 0deg 60deg,
+      #fde047 60deg 120deg,
+      #86efac 120deg 180deg,
+      #93c5fd 180deg 240deg,
+      #c4b5fd 240deg 300deg,
+      #fbcfe8 300deg 360deg
+    );
+  box-shadow: 0 14px 30px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.18);
+}
+.wheel-num{
+  position: absolute; left: 50%; top: 50%;
+  transform-origin: 0 0;
+  font-size: clamp(36px, 9vw, 56px);
+  font-weight: 900; color: #7f1d1d;
+  -webkit-text-stroke: 2.5px #fff;
+  text-shadow: 2px 3px 0 #fff;
+}
+.wheel-center{
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(70px, 16vw, 100px);
+  height: clamp(70px, 16vw, 100px);
+  background: linear-gradient(180deg, #fde047, #d97706);
+  border: 5px solid #7f1d1d;
+  border-radius: 50%;
+  z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 7vw, 40px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+.target-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.96);
+  border: 4px solid #7f1d1d; border-radius: 22px;
+  padding: 8px 18px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.target-pill-label{ font-size: 13px; font-weight: 900; color:#7f1d1d; letter-spacing: 1px; }
+.target-pill-num{
+  font-size: clamp(36px, 9vw, 52px); color:#dc2626;
+  -webkit-text-stroke: 2.5px #7f1d1d;
+  text-shadow: 2px 3px 0 #7f1d1d;
+  font-weight: 900; line-height: 1;
+}
+
+.stop-btn{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #dc2626, #991b1b);
+  color: #fff; border: 5px solid #fff;
+  border-radius: 50%;
+  width: clamp(120px, 28vw, 170px);
+  height: clamp(120px, 28vw, 170px);
+  font-size: clamp(28px, 7vw, 42px); font-weight: 900;
+  letter-spacing: 2px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.45), inset 0 -8px 14px rgba(0,0,0,0.3);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.08s var(--bounce);
+  animation: pulseRing 1.6s ease-in-out infinite;
+}
+@keyframes pulseRing{
+  0%,100%{ box-shadow: 0 8px 18px rgba(0,0,0,0.45), 0 0 0 0 rgba(220,38,38,0.7); }
+  50%{ box-shadow: 0 8px 18px rgba(0,0,0,0.45), 0 0 0 20px rgba(220,38,38,0); }
+}
+.stop-btn:active{ transform: translateX(-50%) scale(0.94); }
+.stop-btn.disabled{ animation: none; opacity: 0.5; pointer-events: none; }
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(254,240,138,0.96);
+  border: 3px solid #7f1d1d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#7f1d1d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #7f1d1d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#7f1d1d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">NUMBER WHEEL</div>
+    <div class="title-hero">🎡</div>
+    <div class="title-sub">Watch the wheel spin · Stop it on the right number!</div>
+    <button class="start-btn" id="btnStart">🎯 Step Right Up</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud" style="display:none"></div>
+  <div class="tent"></div>
+
+  <div class="target-pill">
+    <span class="target-pill-label">STOP ON</span>
+    <span class="target-pill-num" id="targetNum">14</span>
+  </div>
+
+  <div class="wheel-wrap">
+    <span class="pointer">🔻</span>
+    <div class="wheel" id="wheel">
+      <!-- 6 numbers placed by JS -->
+    </div>
+    <div class="wheel-center">🎰</div>
+  </div>
+
+  <button class="stop-btn" id="stopBtn">STOP</button>
+
+  <div class="progress-pill">🎯 <span id="progress">0</span> / 4</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">JACKPOT!</div>
+    <div class="title-hero">🎯</div>
+    <div class="celeb-count" id="celebCount">All wheels stopped!</div>
+    <button class="start-btn" id="btnAgain">🎯 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const FULL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+const SEGMENTS = 6;
+const SEG_ANGLE = 360 / SEGMENTS;
+
+let roundIdx = 0, jackpots = 0;
+let wheelNums = [];  // value at each segment index, in order 0..5
+let target = 0;
+let angle = 0;
+let spinning = false;
+let lastFrame = 0;
+let stopping = false;
+let rafId = null;
+
+function placeNumbers(){
+  const wheel = $('wheel');
+  // remove previous wheel-num children but keep gradient
+  [...wheel.querySelectorAll('.wheel-num')].forEach(el => el.remove());
+  // wheel numbers placed around the edge — each segment center is at (i*60 + 30) deg from top
+  const radius = (wheel.clientWidth || 320) * 0.36;
+  wheelNums.forEach((n, i) => {
+    const span = document.createElement('span');
+    span.className = 'wheel-num';
+    span.textContent = n;
+    const segAngle = i * SEG_ANGLE + SEG_ANGLE/2;  // degrees from top, clockwise
+    const rad = (segAngle - 90) * Math.PI / 180;   // -90 to put 0 at top
+    const x = Math.cos(rad) * radius;
+    const y = Math.sin(rad) * radius;
+    span.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${segAngle}deg)`;
+    wheel.appendChild(span);
+  });
+}
+
+function pickRound(){
+  // pick 6 distinct random numbers from 0-20; one is the target
+  const pool = shuffle(FULL);
+  wheelNums = pool.slice(0, SEGMENTS);
+  // ensure target is one of them — make first wheelNum the target slot
+  target = wheelNums[Math.floor(Math.random() * SEGMENTS)];
+  // shuffle them so target's slot is random
+  wheelNums = shuffle(wheelNums);
+  $('targetNum').textContent = target;
+}
+
+function frame(now){
+  if(!spinning){ return; }
+  if(!lastFrame) lastFrame = now;
+  const dt = (now - lastFrame) / 1000;
+  lastFrame = now;
+  // angle increases clockwise. Speed: 0.55 rev/sec base when not stopping.
+  const speed = stopping ? Math.max(0.05, speedAtStop * decayFactor) : 0.55;
+  angle = (angle + speed * 360 * dt) % 360;
+  $('wheel').style.transform = `rotate(${angle}deg)`;
+  if(stopping){
+    decayFactor *= 0.97;  // exponential decay
+    if(speed <= 0.06){
+      // settle on the nearest segment center
+      spinning = false;
+      finalizeStop();
+      return;
+    }
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+let speedAtStop = 0.55;
+let decayFactor = 1;
+
+function startSpin(){
+  cancelAnimationFrame(rafId);
+  angle = Math.random() * 360;
+  $('wheel').style.transform = `rotate(${angle}deg)`;
+  spinning = true;
+  stopping = false;
+  lastFrame = 0;
+  $('stopBtn').classList.remove('disabled');
+  rafId = requestAnimationFrame(frame);
+}
+
+function handleStop(){
+  if(!spinning || stopping) return;
+  $('stopBtn').classList.add('disabled');
+  stopping = true;
+  speedAtStop = 0.55;
+  decayFactor = 1;
+  audio.tone('whoosh');
+}
+
+function finalizeStop(){
+  // Settle to nearest segment center
+  // The segment at top is the one whose center is at (360 - angle) mod 360 from the original orientation
+  const topAngle = (360 - angle) % 360;
+  // each segment center is at i*SEG_ANGLE + SEG_ANGLE/2
+  let bestI = 0;
+  let bestDiff = Infinity;
+  for(let i = 0; i < SEGMENTS; i++){
+    const center = i * SEG_ANGLE + SEG_ANGLE/2;
+    let diff = Math.abs(((center - topAngle + 540) % 360) - 180);
+    diff = 180 - diff;
+    // simpler: angular distance
+    const d = Math.min(Math.abs(center - topAngle), 360 - Math.abs(center - topAngle));
+    if(d < bestDiff){ bestDiff = d; bestI = i; }
+  }
+  // snap wheel rotation so this segment is exactly at top
+  const finalRotation = (360 - (bestI * SEG_ANGLE + SEG_ANGLE/2)) % 360;
+  $('wheel').animate(
+    [{ transform: `rotate(${angle}deg)` }, { transform: `rotate(${finalRotation}deg)` }],
+    { duration: 250, easing: 'cubic-bezier(0.34,1.56,0.64,1)', fill: 'forwards' }
+  );
+  angle = finalRotation;
+  setTimeout(() => {
+    const landed = wheelNums[bestI];
+    if(landed === target){
+      audio.tone('sparkle');
+      audio.clearQueue();
+      audio.speakCategory('correct');
+      jackpots++;
+      $('progress').textContent = jackpots;
+      audio.speakNumber(target);
+      const wR = $('wheel').getBoundingClientRect();
+      starBurst(wR.left + wR.width/2, wR.top + 30);
+      burstConfetti(innerWidth/2, innerHeight*0.4, 24);
+      roundIdx++;
+      if(roundIdx >= 4){
+        setTimeout(showCeleb, 1500);
+      } else {
+        setTimeout(startRound, 1700);
+      }
+    } else {
+      // gentle miss — re-spin
+      audio.tone('wrong');
+      audio.clearQueue();
+      audio.speakCategory('wrong');
+      setTimeout(() => {
+        audio.speakPhrase('lets_try');
+        setTimeout(() => audio.speakNumber(target), 500);
+        $('stopBtn').classList.remove('disabled');
+        startSpin();
+      }, 1400);
+    }
+  }, 300);
+}
+
+function startRound(){
+  pickRound();
+  placeNumbers();
+  showBanner('Round ' + (roundIdx+1), 'Stop on ' + target);
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('tap_the_number');
+    audio.speakNumber(target);
+    startSpin();
+  }, 1300);
+}
+
+function showCeleb(){
+  spinning = false;
+  cancelAnimationFrame(rafId);
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${jackpots} jackpots!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; jackpots = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('stopBtn'), () => handleStop());
+</script>
+</body>
+</html>

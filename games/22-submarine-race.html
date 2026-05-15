@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0c4a6e">
+<title>Submarine Race · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 30%, #075985 60%, #0c4a6e 100%);
+  color: #f0f9ff;
+}
+.back-home-btn{ color:#0c4a6e; border-color:#fde047; background:#f0f9ff; }
+
+.bubble-bg{
+  position: absolute; pointer-events: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.15));
+  animation: bubbleRise var(--dur,7s) linear infinite var(--delay,0s);
+}
+@keyframes bubbleRise{
+  0%{ transform: translateY(0); opacity: 0; }
+  10%{ opacity: 0.7; }
+  100%{ transform: translateY(-110vh); opacity: 0; }
+}
+
+.treasure-end{
+  position: absolute; top: 30vh; right: 4vw;
+  font-size: clamp(40px, 10vw, 64px);
+  z-index: 5; pointer-events: none;
+  animation: heroFloat 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px #fde047);
+}
+
+.lanes{
+  position: absolute; top: 22vh; left: 4vw; right: 14vw; bottom: 30vh;
+  display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  z-index: 3;
+}
+.lane{
+  position: relative;
+  height: 30%;
+  background: rgba(2,132,199,0.3);
+  border: 3px solid rgba(255,255,255,0.4);
+  border-radius: 999px;
+  overflow: visible;
+}
+.lane-label{
+  position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+  background: #fff; color:#0c4a6e;
+  border: 3px solid #0c4a6e; border-radius: 10px;
+  padding: 2px 10px;
+  font-size: clamp(22px, 5.5vw, 32px); font-weight: 900; z-index: 4;
+}
+.sub{
+  position: absolute; left: 70px; top: 50%;
+  transform: translateY(-50%);
+  width: clamp(80px, 18vw, 120px);
+  display: flex; align-items: center;
+  transition: left 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 5;
+  animation: subBob 1.6s ease-in-out infinite;
+}
+@keyframes subBob{ 0%,100%{ transform: translateY(-50%) rotate(-2deg) } 50%{ transform: translateY(-50%) rotate(2deg) } }
+.sub.boost{ animation: subBoost 0.3s ease-out; }
+@keyframes subBoost{ 0%,100%{ transform: translateY(-50%) scale(1) } 50%{ transform: translateY(-50%) scale(1.15) } }
+.sub-body{
+  width: 70%; height: 30px;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 3px solid #fff;
+  border-radius: 50% 30% 30% 50% / 50% 50% 50% 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(20px, 5vw, 28px); color:#fff;
+  -webkit-text-stroke: 1.5px rgba(0,0,0,0.45); font-weight: 900;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  position: relative;
+}
+.sub-body::before{
+  content:''; position:absolute; top: -8px; left: 30%; width: 8px; height: 12px;
+  background: var(--c2); border: 2px solid #fff; border-radius: 4px 4px 0 0;
+}
+.sub-window{
+  position: relative; z-index: 2;
+  margin-left: 6px;
+}
+.sub-prop{
+  position: relative;
+  width: 14px; height: 30px;
+  background: #94a3b8;
+  border-radius: 4px;
+  margin-left: -4px;
+}
+.bubbles-trail{
+  position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+  display: flex; gap: 4px;
+}
+.sub1{ --c1:#fca5a5; --c2:#dc2626; }
+.sub2{ --c1:#fde047; --c2:#d97706; }
+.sub3{ --c1:#86efac; --c2:#16a34a; }
+.sub4{ --c1:#fbcfe8; --c2:#db2777; }
+.sub5{ --c1:#c4b5fd; --c2:#7c3aed; }
+.sub6{ --c1:#a5f3fc; --c2:#0891b2; }
+
+.tap-zone{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  width: clamp(220px, 56vw, 380px);
+  height: clamp(100px, 22vw, 140px);
+  background: linear-gradient(180deg, #fde047, #f59e0b);
+  border: 5px solid #0c4a6e;
+  border-radius: 22px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+  transition: transform 0.08s var(--bounce);
+}
+.tap-zone:active{ transform: translateX(-50%) scale(0.95); }
+.tap-zone-label{ font-size: 12px; font-weight: 900; color:#0c4a6e; letter-spacing: 1px; }
+.tap-zone-target{
+  font-size: clamp(46px, 12vw, 68px); color:#be123c;
+  -webkit-text-stroke: 3px #0c4a6e;
+  text-shadow: 3px 4px 0 #0c4a6e; font-weight: 900; line-height: 1;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #0c4a6e; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#0c4a6e;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #0c4a6e; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#0c4a6e; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">SUBMARINE RACE</div>
+    <div class="title-hero">🚢</div>
+    <div class="title-sub">Race the subs · Reach the treasure first!</div>
+    <button class="start-btn" id="btnStart">⚓ Dive Down</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Cheer for</span>
+    <span class="hud-target" id="hudTarget">14</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="treasure-end">💰</div>
+
+  <div class="lanes">
+    <div class="lane">
+      <span class="lane-label" id="labelT">5</span>
+      <div class="sub" id="subT">
+        <div class="bubbles-trail">
+          <span style="font-size:8px">🫧</span><span style="font-size:6px">🫧</span>
+        </div>
+        <div class="sub-prop"></div>
+        <div class="sub-body sub1"><span id="numT">5</span></div>
+      </div>
+    </div>
+    <div class="lane">
+      <span class="lane-label" id="labelB">17</span>
+      <div class="sub" id="subB">
+        <div class="bubbles-trail">
+          <span style="font-size:8px">🫧</span><span style="font-size:6px">🫧</span>
+        </div>
+        <div class="sub-prop"></div>
+        <div class="sub-body sub4"><span id="numB">17</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-pill">🏆 wins: <span id="wins">0</span> / 4</div>
+
+  <div class="tap-zone" id="tapZone">
+    <div class="tap-zone-label">TAP FOR SUB</div>
+    <div class="tap-zone-target" id="tapTarget">14</div>
+  </div>
+
+  <div class="banner" id="banner">Race 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">DEEP-SEA CHAMP!</div>
+    <div class="title-hero">🚢</div>
+    <div class="celeb-count" id="celebCount">All races won!</div>
+    <button class="start-btn" id="btnAgain">⚓ Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const FULL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+
+const STEPS_TO_WIN = 10;
+let roundIdx = 0, wins = 0;
+let topNum = 5, botNum = 17;
+let topSteps = 0, botSteps = 0;
+let target = 5;
+let raceActive = false;
+let opponentTimer = null;
+
+function pickPair(){
+  const s = shuffle(FULL);
+  return [s[0], s[1]];
+}
+
+function setupRace(){
+  const [a, b] = pickPair();
+  topNum = a; botNum = b;
+  target = Math.random() < 0.5 ? a : b;
+  topSteps = 0; botSteps = 0;
+  $('labelT').textContent = a;
+  $('labelB').textContent = b;
+  $('numT').textContent = a;
+  $('numB').textContent = b;
+  $('subT').style.left = '70px';
+  $('subB').style.left = '70px';
+  $('tapTarget').textContent = target;
+  $('hudTarget').textContent = target;
+}
+
+function moveSub(which, steps){
+  const el = which === 'T' ? $('subT') : $('subB');
+  const pct = (steps / STEPS_TO_WIN) * 86;
+  el.style.left = `calc(70px + ${pct}%)`;
+  el.classList.add('boost');
+  setTimeout(() => el.classList.remove('boost'), 280);
+}
+
+function handleTap(){
+  if(!raceActive) return;
+  audio.tone('pop');
+  if(target === topNum){
+    topSteps++;
+    moveSub('T', topSteps);
+    if(topSteps >= STEPS_TO_WIN) finishRace('T');
+  } else {
+    botSteps++;
+    moveSub('B', botSteps);
+    if(botSteps >= STEPS_TO_WIN) finishRace('B');
+  }
+}
+
+function tickOpponent(){
+  if(!raceActive) return;
+  if(target === topNum){
+    botSteps++;
+    moveSub('B', botSteps);
+    if(botSteps >= STEPS_TO_WIN) finishRace('B');
+  } else {
+    topSteps++;
+    moveSub('T', topSteps);
+    if(topSteps >= STEPS_TO_WIN) finishRace('T');
+  }
+}
+
+function finishRace(winner){
+  if(!raceActive) return;
+  raceActive = false;
+  clearInterval(opponentTimer);
+  const playerSide = target === topNum ? 'T' : 'B';
+  const playerWon = winner === playerSide;
+  if(playerWon){
+    wins++;
+    $('wins').textContent = wins;
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    const winEl = winner === 'T' ? $('subT') : $('subB');
+    const r = winEl.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    burstConfetti(r.left + r.width/2, r.top + r.height/2, 24);
+  } else {
+    audio.clearQueue();
+    audio.speakPhrase('lets_play');
+  }
+  audio.tone('ding');
+  setTimeout(() => audio.speakNumber(target), 700);
+  roundIdx++;
+  if(roundIdx >= 4){ setTimeout(showCeleb, 1500); }
+  else { setTimeout(startNewRace, 1700); }
+}
+
+function startNewRace(){
+  setupRace();
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  showBanner('Race ' + (roundIdx+1), 'Cheer for ' + target);
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('lets_go');
+    setTimeout(() => audio.speakNumber(target), 700);
+    raceActive = true;
+    opponentTimer = setInterval(tickOpponent, 1100);
+  }, 1300);
+}
+
+function showCeleb(){
+  raceActive = false;
+  clearInterval(opponentTimer);
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${wins} race${wins === 1 ? '' : 's'} won!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; wins = 0;
+  $('wins').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startNewRace, 1400);
+}
+
+(function(){
+  setInterval(() => {
+    if(!$('scrGame').classList.contains('active')) return;
+    const b = document.createElement('div');
+    b.className = 'bubble-bg';
+    b.style.left = (Math.random()*100) + 'vw';
+    b.style.bottom = '0';
+    b.style.setProperty('--dur', (5 + Math.random()*4) + 's');
+    b.style.width = (8 + Math.random()*16) + 'px';
+    b.style.height = b.style.width;
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 9500);
+  }, 700);
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('tapZone'), () => handleTap());
+</script>
+</body>
+</html>

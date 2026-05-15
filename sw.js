@@ -1,7 +1,7 @@
 // Count to Twenty — offline-first service worker.
 // Pre-cache shell + audio so the PWA runs on a tablet with no internet.
 
-const CACHE = 'c2t-v7';
+const CACHE = 'c2t-v8';
 const SHELL = [
   './',
   './index.html',
@@ -45,7 +45,12 @@ const SHELL = [
   './games/13b-compass-missing.html',
   './games/14b-penguin-slide.html',
   './games/15b-snail-race.html',
-  './games/16b-train-sort.html'
+  './games/16b-train-sort.html',
+  './games/21-wizard-sort.html',
+  './games/22-submarine-race.html',
+  './games/23-tap-biggest.html',
+  './games/24-number-wheel.html',
+  './games/25-count-to-n.html'
 ];
 
 self.addEventListener('install', e => {

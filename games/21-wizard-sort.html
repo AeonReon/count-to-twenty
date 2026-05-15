@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#312e81">
+<title>Wizard Sort · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: radial-gradient(circle at 50% 0%, #6366f1 0%, #312e81 40%, #1e1b4b 80%, #0f172a 100%);
+  color: #ede9fe;
+}
+.back-home-btn{ color:#1e1b4b; border-color:#fde047; background:#ede9fe; }
+
+.star-bg{ position:absolute; pointer-events:none; color:#fde047; opacity:0.55;
+  animation: twinkle var(--dur,2s) ease-in-out infinite var(--delay,0s); }
+@keyframes twinkle{ 0%,100%{ opacity:0.3 } 50%{ opacity:0.95 } }
+
+.wizard{
+  position: absolute; top: 11vh; left: 6vw;
+  font-size: clamp(60px, 14vw, 96px);
+  z-index: 5;
+  filter: drop-shadow(0 0 18px #a78bfa);
+  animation: heroFloat 2.4s ease-in-out infinite;
+}
+.wizard.cheer{ animation: wizCheer 0.7s var(--bounce); }
+@keyframes wizCheer{ 0%{transform:scale(1)} 30%{transform:scale(1.2) rotate(-12deg)} 60%{transform:scale(1.1) rotate(12deg)} 100%{transform:scale(1)} }
+
+/* spell book on right shows sorted line */
+.book-label{
+  position: absolute; top: 12vh; right: 4vw;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #1e1b4b; border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px; font-weight: 900; color:#1e1b4b;
+  letter-spacing: 1px;
+  z-index: 6;
+}
+.book{
+  position: absolute; top: 17vh; right: 4vw;
+  width: clamp(110px, 26vw, 180px);
+  min-height: clamp(180px, 38vw, 260px);
+  background: linear-gradient(180deg, #fef3c7, #fde68a);
+  border: 5px solid #422006;
+  border-radius: 8px 18px 18px 8px;
+  padding: 10px 8px;
+  display: flex; flex-direction: column; gap: 6px;
+  align-items: center;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.5), inset 0 0 14px rgba(146,64,14,0.15);
+  z-index: 4;
+}
+.book::before{
+  content:'';
+  position: absolute; left: -8px; top: 8px; bottom: 8px; width: 8px;
+  background: linear-gradient(180deg, #92400e, #78350f);
+  border-radius: 4px 0 0 4px;
+}
+.book-slot{
+  width: 90%; height: 32px;
+  border: 2px dashed rgba(66,32,6,0.4); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 900; color: rgba(66,32,6,0.4);
+}
+.book-slot.filled{
+  border: none;
+  background: linear-gradient(180deg, #c4b5fd, #7c3aed);
+  color: #fff;
+  -webkit-text-stroke: 1.5px rgba(0,0,0,0.4);
+  text-shadow: 1px 2px 0 rgba(0,0,0,0.3);
+  font-size: 22px;
+  box-shadow: 0 0 14px rgba(124,58,237,0.7);
+  animation: bookFill 0.7s var(--bounce);
+}
+@keyframes bookFill{ 0%{ transform: scale(0); } 60%{ transform: scale(1.25); } 100%{ transform: scale(1); } }
+
+/* cauldron area in middle — bubbles up the 6 floating numbers */
+.cauldron-area{
+  position: absolute; top: 25vh; left: 4vw; right: 38vw; bottom: 22vh;
+  z-index: 3;
+}
+.bubble-num{
+  position: absolute;
+  width: clamp(64px, 14vw, 90px); height: clamp(64px, 14vw, 90px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.bubble-num:active{ transform: scale(0.92); }
+.bubble-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.85), var(--c1) 50%, var(--c2) 100%);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 22px var(--c2), inset -6px -8px 12px rgba(0,0,0,0.18);
+}
+.bubble-disc-num{
+  font-size: clamp(26px, 6.5vw, 40px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.5);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4); font-weight: 900;
+}
+.bubble-num.wobble{ animation: wobble 0.5s ease-in-out; }
+.bubble-num.cast{ pointer-events: none; }
+.bub1{ --c1:#fca5a5; --c2:#dc2626; }
+.bub2{ --c1:#fde047; --c2:#d97706; }
+.bub3{ --c1:#86efac; --c2:#16a34a; }
+.bub4{ --c1:#93c5fd; --c2:#2563eb; }
+.bub5{ --c1:#fbcfe8; --c2:#db2777; }
+.bub6{ --c1:#c4b5fd; --c2:#7c3aed; }
+
+.cauldron{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 6;
+  width: clamp(160px, 38vw, 240px);
+  height: clamp(80px, 18vw, 120px);
+  background: linear-gradient(180deg, #475569, #1f2937);
+  border: 5px solid #fde047;
+  border-radius: 50% 50% 30% 30% / 30% 30% 100% 100%;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.6), inset 0 -10px 18px rgba(0,0,0,0.4), 0 0 22px rgba(167,139,250,0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 900; color: #fde047;
+}
+.cauldron::before{
+  content:''; position: absolute; top: -8px; left: 8%; right: 8%; height: 14px;
+  background: #fde047; border-radius: 4px;
+  box-shadow: 0 0 14px #fde047;
+}
+
+.next-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #fde047, #fbbf24);
+  border: 4px solid #1e1b4b; border-radius: 22px;
+  padding: 6px 16px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.next-pill-label{ font-size: 11px; font-weight: 900; color:#1e1b4b; letter-spacing: 1px; }
+.next-pill-num{
+  font-size: clamp(28px, 7vw, 40px); color:#dc2626;
+  -webkit-text-stroke: 2px #1e1b4b;
+  text-shadow: 2px 2px 0 #1e1b4b;
+  font-weight: 900; line-height: 1;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(254,240,138,0.96);
+  border: 3px solid #1e1b4b; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#1e1b4b;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #1e1b4b; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#fde047; text-shadow:2px 2px 0 #1e1b4b; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">WIZARD SORT</div>
+    <div class="title-hero">🧙</div>
+    <div class="title-sub">Cast numbers in order — smallest first!</div>
+    <button class="start-btn" id="btnStart">🧙 Begin Spell</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud" style="display:none"></div>
+  <span class="wizard" id="wizard">🧙</span>
+
+  <div class="book-label">SPELL BOOK</div>
+  <div class="book" id="book"></div>
+
+  <div class="next-pill">
+    <span class="next-pill-label">NEXT</span>
+    <span class="next-pill-num" id="nextNum">2</span>
+  </div>
+  <div class="progress-pill">📜 <span id="progress">0</span> / 4</div>
+
+  <div class="cauldron-area" id="cauldron"></div>
+  <div class="cauldron">CAULDRON</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">SPELL CAST!</div>
+    <div class="title-hero">🧙</div>
+    <div class="celeb-count" id="celebCount">All numbers sorted!</div>
+    <button class="start-btn" id="btnAgain">🧙 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const FULL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+const COLORS = ['bub1','bub2','bub3','bub4','bub5','bub6'];
+
+let roundIdx = 0, sortedRounds = 0;
+let currentOrder = [];   // ascending sorted version of 6 picks
+let nextIdx = 0;
+let bubbleEls = [];
+let busy = false;
+
+function pickSix(){
+  return shuffle(FULL).slice(0, 6);
+}
+
+function spawnBubbles(picks){
+  const area = $('cauldron');
+  area.innerHTML = '';
+  bubbleEls = [];
+  const w = area.clientWidth || (innerWidth * 0.6);
+  const h = area.clientHeight || (innerHeight * 0.4);
+  const cols = 3, rows = 2;
+  const cellW = w / cols, cellH = h / rows;
+  shuffle(picks).forEach((n, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    const b = document.createElement('div');
+    b.className = 'bubble-num';
+    b.dataset.n = n;
+    b.innerHTML = `<div class="bubble-disc ${COLORS[i]}"><span class="bubble-disc-num">${n}</span></div>`;
+    b.style.left = (cellW*col + cellW*0.5 - 45 + (Math.random()-0.5)*cellW*0.3) + 'px';
+    b.style.top  = (cellH*row + cellH*0.5 - 45 + (Math.random()-0.5)*cellH*0.25) + 'px';
+    b.style.animation = `heroFloat ${(2 + Math.random()*1.5)}s ease-in-out infinite ${-Math.random()*2}s`;
+    onTap(b, () => handleBubbleTap(b, n));
+    area.appendChild(b);
+    bubbleEls.push(b);
+  });
+}
+
+function buildSpellBook(){
+  const book = $('book');
+  book.innerHTML = '';
+  for(let i = 0; i < 6; i++){
+    const s = document.createElement('div');
+    s.className = 'book-slot';
+    s.textContent = '?';
+    book.appendChild(s);
+  }
+}
+
+function handleBubbleTap(el, n){
+  if(busy || el.classList.contains('cast')) return;
+  const want = currentOrder[nextIdx];
+  if(n === want){
+    busy = true;
+    el.classList.add('cast');
+    audio.tone('sparkle');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    const slot = $('book').children[nextIdx];
+    slot.classList.add('filled');
+    slot.textContent = n;
+    const sR = slot.getBoundingClientRect();
+    starBurst(sR.left + sR.width/2, sR.top + sR.height/2);
+    // bubble flies to the spell book slot
+    const eR = el.getBoundingClientRect();
+    const dx = (sR.left + sR.width/2) - (eR.left + eR.width/2);
+    const dy = (sR.top + sR.height/2) - (eR.top + eR.height/2);
+    el.animate(
+      [
+        { transform: 'translate(0,0) scale(1) rotate(0)' },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.3) rotate(360deg)`, opacity: 0 }
+      ],
+      { duration: 700, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+    );
+    $('wizard').classList.add('cheer');
+    setTimeout(() => $('wizard').classList.remove('cheer'), 700);
+    nextIdx++;
+    setTimeout(() => {
+      audio.speakNumber(n);
+    }, 350);
+    if(nextIdx >= currentOrder.length){
+      sortedRounds++;
+      $('progress').textContent = sortedRounds;
+      audio.clearQueue();
+      audio.speakCategory('round-complete');
+      burstConfetti(innerWidth/2, innerHeight*0.4, 26);
+      setTimeout(() => { busy = false; finishRound(); }, 1300);
+    } else {
+      const next = currentOrder[nextIdx];
+      $('nextNum').textContent = next;
+      setTimeout(() => { audio.clearQueue(); audio.speakNumber(next); busy = false; }, 900);
+    }
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(want);
+    }, 1100);
+  }
+}
+
+function startRound(){
+  const picks = pickSix();
+  currentOrder = picks.slice().sort((a, b) => a - b);
+  nextIdx = 0;
+  $('nextNum').textContent = currentOrder[0];
+  buildSpellBook();
+  spawnBubbles(picks);
+  showBanner('Round ' + (roundIdx+1), 'Smallest first!');
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('tap_the_number');
+    audio.speakNumber(currentOrder[0]);
+  }, 1300);
+}
+
+function finishRound(){
+  roundIdx++;
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${sortedRounds} spells cast!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; sortedRounds = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+(function(){
+  for(let i = 0; i < 50; i++){
+    const s = document.createElement('div');
+    s.className = 'star-bg'; s.textContent = '✦';
+    s.style.top = Math.random()*70 + 'vh';
+    s.style.left = Math.random()*100 + 'vw';
+    s.style.fontSize = (6 + Math.random()*14) + 'px';
+    s.style.setProperty('--dur', (1 + Math.random()*3) + 's');
+    s.style.setProperty('--delay', (-Math.random()*3) + 's');
+    document.body.appendChild(s);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>
