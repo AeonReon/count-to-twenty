@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#16a34a">
+<title>Dino Tracks · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #d9f99d 35%, #86efac 70%, #166534 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fde047; }
+.fern-bg{ position: absolute; pointer-events: none; opacity: 0.6; font-size: clamp(40px, 10vw, 60px); }
+.fern-bg.f1{ top: 14vh; left: 4vw; }
+.fern-bg.f2{ top: 18vh; right: 4vw; }
+.fern-bg.f3{ bottom: 22vh; left: 8vw; opacity: 0.4; }
+
+.ranger{
+  position: absolute; top: 12vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(50px, 12vw, 80px);
+  z-index: 5;
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.25));
+  animation: heroFloat 2.4s ease-in-out infinite;
+}
+.ranger.cheer{ animation: cheer 0.7s var(--bounce); }
+@keyframes cheer{ 0%{transform:translateX(-50%) scale(1)} 30%{transform:translateX(-50%) scale(1.2) rotate(-10deg)} 60%{transform:translateX(-50%) scale(1.1) rotate(10deg)} 100%{transform:translateX(-50%) scale(1)} }
+
+.order-pill{
+  position: absolute; top: 11vh; right: 4vw;
+  z-index: 6;
+  background: #fff; color:#14532d;
+  border: 4px solid #14532d; border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 12px; font-weight: 900;
+  text-align: center; letter-spacing: 1px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.order-pill-num{
+  font-size: clamp(34px, 9vw, 52px); color:#dc2626;
+  -webkit-text-stroke: 2.5px #14532d;
+  text-shadow: 2px 3px 0 #14532d;
+  font-weight: 900; line-height: 1; margin: 4px 0;
+}
+
+/* trails grid */
+.trails{
+  position: absolute; top: 24vh; left: 0; right: 0; bottom: 18vh;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(8px, 2vw, 14px);
+  padding: 0 clamp(14px, 4vw, 26px);
+  z-index: 3;
+  align-content: center;
+}
+.trail-pad{
+  position: relative;
+  aspect-ratio: 5 / 6;
+  cursor: pointer; touch-action: manipulation;
+  background:
+    linear-gradient(180deg, rgba(254,243,199,0.92) 0%, rgba(217,249,157,0.92) 100%);
+  border: 4px solid #14532d;
+  border-radius: 14px;
+  display: flex; flex-direction: column-reverse; align-items: center;
+  padding: 8px 4px;
+  gap: 2px;
+  overflow: hidden;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.18);
+  transition: transform 0.15s var(--bounce);
+}
+.trail-pad:active{ transform: scale(0.93); }
+.footprint{
+  font-size: clamp(12px, 3vw, 18px);
+  opacity: 0.85;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+  animation: stepIn 0.4s var(--bounce);
+}
+@keyframes stepIn{ 0%{ transform: scale(0); } 100%{ transform: scale(1); } }
+.footprint.alt{ transform: scaleX(-1); }
+.trail-pad.wobble{ animation: wobble 0.5s ease-in-out; }
+.trail-pad.found{ animation: found 0.7s var(--bounce); pointer-events:none; }
+@keyframes found{ 0%{transform:scale(1)} 40%{transform:scale(1.12); background:#fde047} 100%{transform:scale(1); background:#fde047} }
+
+.dino-icon{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #d9f99d, #84cc16);
+  border: 4px solid #14532d; border-radius: 14px;
+  padding: 10px 18px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 900; color:#14532d;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.dino-icon-emoji{ font-size: clamp(28px, 7vw, 40px); }
+.dino-icon-count{
+  font-size: 22px; -webkit-text-stroke: 1.5px #fff; color:#dc2626;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #14532d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#14532d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">DINO TRACKS</div>
+    <div class="title-hero">🦕</div>
+    <div class="title-sub">Count footprints · Follow the right trail!</div>
+    <button class="start-btn" id="btnStart">🦕 Start Tracking</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Find</span>
+    <span class="hud-target" id="hudTarget">14</span>
+    <span style="font-size:clamp(13px,3.4vw,18px);font-weight:900;">prints</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="fern-bg f1">🌿</div>
+  <div class="fern-bg f2">🌿</div>
+  <div class="fern-bg f3">🌿</div>
+
+  <span class="ranger" id="ranger">🧑‍🌾</span>
+  <div class="order-pill">
+    FIND
+    <div class="order-pill-num" id="orderNum">14</div>
+    PRINTS
+  </div>
+
+  <div class="trails" id="trails"></div>
+
+  <div class="progress-pill">🦖 <span id="progress">0</span> / 16</div>
+  <div class="dino-icon">
+    <span class="dino-icon-emoji">🦖</span>
+    trails: <span class="dino-icon-count" id="dinoCount">0</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">EXPEDITION DONE!</div>
+    <div class="title-hero">🦕</div>
+    <div class="celeb-count" id="celebCount">All trails followed!</div>
+    <button class="start-btn" id="btnAgain">🦕 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [11,12,13,14,15,16];
+
+let roundIdx = 0, promptIdx = 0, found = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let trailEls = [];
+let busy = false;
+
+function spawnTrails(){
+  const grid = $('trails');
+  grid.innerHTML = '';
+  trailEls = [];
+  shuffle(NUMS).forEach(n => {
+    const t = document.createElement('div');
+    t.className = 'trail-pad';
+    t.dataset.n = n;
+    let prints = '';
+    for(let i = 0; i < n; i++){
+      prints += `<span class="footprint ${i%2===1?'alt':''}">🐾</span>`;
+    }
+    t.innerHTML = prints;
+    onTap(t, () => handleTrailTap(t, n));
+    grid.appendChild(t);
+    trailEls.push(t);
+  });
+}
+
+function handleTrailTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('found');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    $('ranger').classList.add('cheer');
+    setTimeout(() => $('ranger').classList.remove('cheer'), 700);
+    found++;
+    $('progress').textContent = found;
+    $('dinoCount').textContent = found;
+    const r = el.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    burstConfetti(r.left + r.width/2, r.top + r.height/2, 14);
+    setTimeout(() => audio.speakNumber(n), 350);
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(found >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 1000);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('how_many');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  $('orderNum').textContent = currentTarget;
+  spawnTrails();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('how_many');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    trailEls.forEach(t => {
+      if(Number(t.dataset.n) === currentTarget && !t.classList.contains('found')){
+        t.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.5) drop-shadow(0 0 16px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 8000);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  clearTimeout(hintTimer);
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${found} trails tracked!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; found = 0;
+  $('progress').textContent = '0';
+  $('dinoCount').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

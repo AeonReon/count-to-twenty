@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e1b4b">
+<title>Asteroid Defense · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: radial-gradient(ellipse at 30% 20%, #312e81 0%, #1e1b4b 50%, #0f172a 100%);
+  color: #ede9fe;
+}
+.back-home-btn{ color:#1e1b4b; border-color:#fde047; background:#ede9fe; }
+
+.star-bg{ position:absolute; pointer-events:none; color:#fff; opacity:0.7;
+  animation: twinkle var(--dur,2s) ease-in-out infinite var(--delay,0s); }
+@keyframes twinkle{ 0%,100%{ opacity:0.3 } 50%{ opacity:0.95 } }
+
+.earth{
+  position: absolute; bottom: -8vh; left: 50%;
+  transform: translateX(-50%);
+  width: clamp(280px, 70vw, 480px); height: clamp(280px, 70vw, 480px);
+  background: radial-gradient(circle at 35% 30%, #67e8f9, #0e7490 50%, #134e4a 100%);
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 0 50px rgba(103,232,249,0.5), inset -40px -50px 80px rgba(0,0,0,0.4);
+}
+.earth::before{
+  content:''; position: absolute; top: 25%; left: 18%;
+  width: 30%; height: 18%;
+  background: rgba(34,197,94,0.6); border-radius: 30% 50% 30% 50%;
+  filter: blur(2px);
+}
+.earth::after{
+  content:''; position: absolute; top: 50%; right: 12%;
+  width: 22%; height: 16%;
+  background: rgba(34,197,94,0.5); border-radius: 50% 30% 50% 30%;
+  filter: blur(2px);
+}
+.earth.shake{ animation: earthShake 0.4s; }
+@keyframes earthShake{ 0%,100%{ transform: translateX(-50%) } 25%{ transform: translateX(-52%) } 75%{ transform: translateX(-48%) } }
+
+.spaceship{
+  position: absolute; bottom: 32vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(40px, 10vw, 60px);
+  z-index: 5; pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(165,180,252,0.5));
+  animation: shipBob 2s ease-in-out infinite;
+}
+@keyframes shipBob{ 0%,100%{ transform: translateX(-50%) translateY(0) } 50%{ transform: translateX(-50%) translateY(-6px) } }
+
+/* the asteroid field — falls slowly from top */
+.field{
+  position: absolute; top: 12vh; left: 0; right: 0; bottom: 28vh;
+  z-index: 3; overflow: hidden;
+}
+
+.asteroid{
+  position: absolute;
+  width: clamp(70px, 16vw, 100px); height: clamp(70px, 16vw, 100px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.asteroid:active{ transform: scale(0.92); }
+.asteroid-body{
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 35% 30%, #a3a3a3 0%, #57534e 70%, #292524 100%);
+  border: 3px solid #1c1917;
+  border-radius: 48% 52% 50% 50% / 50% 50% 52% 48%;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.6), inset -8px -10px 14px rgba(0,0,0,0.4);
+}
+.asteroid-num{
+  position: relative; z-index: 3;
+  font-size: clamp(30px, 7vw, 46px); color:#fde047;
+  -webkit-text-stroke: 2px #1c1917;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  font-weight: 900;
+}
+.asteroid.blast{ animation: blast 0.5s var(--bounce) forwards; pointer-events: none; }
+@keyframes blast{
+  0%{ transform: scale(1); opacity: 1; }
+  40%{ transform: scale(1.5); opacity: 1; }
+  100%{ transform: scale(0); opacity: 0; }
+}
+.asteroid.wobble{ animation: wobble 0.5s ease-in-out; }
+
+.alert-flash{
+  position: fixed; inset: 0; pointer-events: none; z-index: 49;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(220,38,38,0.25) 100%);
+  opacity: 0; transition: opacity 0.4s;
+}
+.alert-flash.on{ opacity: 1; animation: alertPulse 0.6s ease-in-out infinite; }
+@keyframes alertPulse{ 0%,100%{ opacity: 0.4 } 50%{ opacity: 0.95 } }
+
+.target-pill{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #1e1b4b, #312e81);
+  border: 4px solid #fde047; border-radius: 20px;
+  padding: 12px 22px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+  display: flex; align-items: center; gap: 14px;
+  color: #fde047;
+}
+.target-pill-label{
+  font-size: 13px; font-weight: 900;
+  letter-spacing: 1px;
+}
+.target-pill-num{
+  font-size: clamp(46px, 12vw, 68px); color:#fde047;
+  -webkit-text-stroke: 3px #1e1b4b;
+  text-shadow: 2px 3px 0 #1e1b4b, 0 0 14px rgba(253,224,71,0.6);
+  font-weight: 900; line-height: 1;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(253,224,71,0.96);
+  border: 3px solid #1e1b4b; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#1e1b4b;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #1e1b4b; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#fde047; text-shadow:2px 2px 0 #1e1b4b; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">ASTEROID DEFENSE</div>
+    <div class="title-hero">☄️</div>
+    <div class="title-sub">Blast the right asteroid before it hits Earth!</div>
+    <button class="start-btn" id="btnStart">🚀 Engage</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Blast</span>
+    <span class="hud-target" id="hudTarget">9</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="earth" id="earth"></div>
+  <span class="spaceship">🚀</span>
+
+  <div class="field" id="field"></div>
+
+  <div class="alert-flash" id="alert"></div>
+
+  <div class="progress-pill">💥 <span id="progress">0</span> / 16</div>
+  <div class="target-pill">
+    <span class="target-pill-label">BLAST</span>
+    <span class="target-pill-num" id="targetNum">9</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">EARTH SAVED!</div>
+    <div class="title-hero">🌍</div>
+    <div class="celeb-count" id="celebCount">All asteroids blasted!</div>
+    <button class="start-btn" id="btnAgain">🚀 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [6,7,8,9,10,11];
+
+const ROUNDS = [
+  { prompts: 4, fallMs: 8000, spawnGap: 1500 },
+  { prompts: 4, fallMs: 7000, spawnGap: 1400 },
+  { prompts: 4, fallMs: 6000, spawnGap: 1300 },
+  { prompts: 4, fallMs: 5500, spawnGap: 1200 }
+];
+
+let roundIdx = 0, promptIdx = 0, blasted = 0;
+let currentTarget = null;
+let promptList = [];
+let activeAsteroids = [];
+let spawnTimer = null;
+let sinceTarget = 99;
+
+function spawnAsteroid(value){
+  const r = ROUNDS[roundIdx];
+  const field = $('field');
+  const fW = field.clientWidth || innerWidth;
+  const fH = field.clientHeight || (innerHeight*0.6);
+  const aW = Math.min(100, Math.max(70, fW*0.18));
+  const a = document.createElement('div');
+  a.className = 'asteroid';
+  a.dataset.n = value;
+  a.innerHTML = `<div class="asteroid-body"></div><span class="asteroid-num">${value}</span>`;
+  const lane = Math.floor(Math.random() * 4);
+  const laneW = (fW - aW) / 4;
+  a.style.left = (lane * laneW + Math.random() * (laneW - 10)) + 'px';
+  a.style.top = '-120px';
+  field.appendChild(a);
+  // animate falling toward earth
+  const dy = fH + 200;
+  const anim = a.animate(
+    [{ transform: 'translate(0,0)' }, { transform: `translateY(${dy}px)` }],
+    { duration: r.fallMs, easing: 'linear', fill: 'forwards' }
+  );
+  const entry = { el: a, anim, value };
+  activeAsteroids.push(entry);
+  onTap(a, () => handleAsteroidTap(a, value));
+  anim.onfinish = () => {
+    // asteroid reached earth — gentle shake, no fail
+    if(activeAsteroids.includes(entry)){
+      activeAsteroids = activeAsteroids.filter(x => x !== entry);
+      $('earth').classList.add('shake');
+      setTimeout(() => $('earth').classList.remove('shake'), 400);
+      audio.tone('whoosh');
+    }
+    a.remove();
+  };
+}
+
+function spawnNext(){
+  // guarantee target shows up frequently
+  const targetOnScreen = activeAsteroids.some(a => a.value === currentTarget);
+  let val;
+  if(currentTarget !== null && (!targetOnScreen || sinceTarget >= 2 || Math.random() < 0.55)){
+    val = currentTarget;
+    sinceTarget = 0;
+  } else {
+    do { val = pick(NUMS); } while(val === currentTarget);
+    sinceTarget++;
+  }
+  spawnAsteroid(val);
+}
+
+function handleAsteroidTap(el, n){
+  if(el.classList.contains('blast')) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(n === currentTarget){
+    el.classList.add('blast');
+    audio.tone('blast');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    starBurst(cx, cy);
+    burstConfetti(cx, cy, 18);
+    // remove this asteroid from active list
+    const entry = activeAsteroids.find(a => a.el === el);
+    if(entry){
+      try { entry.anim.cancel(); } catch(e){}
+      activeAsteroids = activeAsteroids.filter(a => a !== entry);
+    }
+    blasted++;
+    $('progress').textContent = blasted;
+    promptIdx++;
+    setTimeout(() => {
+      if(blasted >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 700);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('tap_the_number');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function clearField(){
+  activeAsteroids.forEach(a => { try { a.anim.cancel(); } catch(e){} a.el.remove(); });
+  activeAsteroids = [];
+  $('field').innerHTML = '';
+}
+
+function nextPrompt(){
+  const r = ROUNDS[roundIdx];
+  if(promptIdx >= r.prompts){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  $('targetNum').textContent = currentTarget;
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('tap_the_number');
+    audio.speakNumber(currentTarget);
+  }, 250);
+}
+
+function startRound(){
+  const r = ROUNDS[roundIdx];
+  promptIdx = 0;
+  sinceTarget = 99;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, r.prompts);
+  clearField();
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(() => {
+    if(spawnTimer) clearInterval(spawnTimer);
+    nextPrompt();
+    spawnNext();
+    spawnTimer = setInterval(() => {
+      if(!$('scrGame').classList.contains('active')){ clearInterval(spawnTimer); return; }
+      spawnNext();
+    }, r.spawnGap);
+  }, 1100);
+}
+
+function finishRound(){
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= ROUNDS.length){
+    if(spawnTimer){ clearInterval(spawnTimer); spawnTimer = null; }
+    clearField();
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  if(spawnTimer){ clearInterval(spawnTimer); spawnTimer = null; }
+  clearField();
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${blasted} asteroids blasted!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; blasted = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// starfield
+(function(){
+  for(let i = 0; i < 50; i++){
+    const s = document.createElement('div');
+    s.className = 'star-bg'; s.textContent = '✦';
+    s.style.top = Math.random()*70 + 'vh';
+    s.style.left = Math.random()*100 + 'vw';
+    s.style.fontSize = (6 + Math.random()*14) + 'px';
+    s.style.setProperty('--dur', (1 + Math.random()*3) + 's');
+    s.style.setProperty('--delay', (-Math.random()*3) + 's');
+    document.body.appendChild(s);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

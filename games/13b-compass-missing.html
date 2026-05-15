@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#92400e">
+<title>Compass Missing · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 35%, #d97706 100%);
+  color: #422006;
+}
+.back-home-btn{ color:#422006; border-color:#fbbf24; }
+
+.compass-wheel{
+  position: absolute; top: 11vh; right: 6vw;
+  font-size: clamp(60px, 14vw, 90px);
+  z-index: 4; pointer-events: none;
+  animation: spin 18s linear infinite;
+  filter: drop-shadow(0 0 18px #fbbf24);
+}
+@keyframes spin{ to{ transform: rotate(360deg) } }
+
+.pirate{
+  position: absolute; top: 14vh; left: 6vw;
+  font-size: clamp(60px, 14vw, 90px);
+  z-index: 4;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
+  animation: heroFloat 2.4s ease-in-out infinite;
+}
+.pirate.cheer{ animation: cheer 0.7s var(--bounce); }
+@keyframes cheer{ 0%{transform:scale(1)} 30%{transform:scale(1.2) rotate(-10deg)} 60%{transform:scale(1.1) rotate(10deg)} 100%{transform:scale(1)} }
+
+/* parchment sequence */
+.parchment-label{
+  position: absolute; top: 26vh; left: 50%;
+  transform: translateX(-50%); z-index: 5;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #422006; border-radius: 14px;
+  padding: 6px 14px;
+  font-size: 12px; font-weight: 900; color:#422006;
+  letter-spacing: 1px;
+}
+.parchment{
+  position: absolute; top: 32vh; left: 4vw; right: 4vw;
+  background:
+    repeating-radial-gradient(circle at 20% 30%, transparent 0 4px, rgba(146,64,14,0.05) 4px 5px),
+    linear-gradient(180deg, #fef3c7 0%, #fde68a 80%);
+  border: 5px solid #422006;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 0 30px rgba(146,64,14,0.18);
+  z-index: 3;
+  display: flex; justify-content: center; align-items: center;
+  gap: clamp(4px, 1.4vw, 12px);
+  flex-wrap: wrap;
+}
+.parch-slot{
+  width: clamp(40px, 11vw, 70px);
+  aspect-ratio: 1;
+  background: linear-gradient(180deg, #fbbf24, #d97706);
+  border: 3px solid #422006;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(24px, 6vw, 38px); font-weight: 900;
+  color: #fef3c7;
+  -webkit-text-stroke: 1.5px #422006;
+  text-shadow: 1px 2px 0 #422006;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset -4px -6px 10px rgba(0,0,0,0.18);
+}
+.parch-slot.missing{
+  background: rgba(255,255,255,0.3);
+  border: 3px dashed #422006;
+  color: #be123c;
+  animation: missingPulse 1.4s ease-in-out infinite;
+}
+@keyframes missingPulse{ 0%,100%{ transform: scale(1) } 50%{ transform: scale(1.1) } }
+.parch-slot.solved{
+  background: linear-gradient(180deg, #86efac, #16a34a);
+  border-color: #fde047;
+  box-shadow: 0 0 18px #fde047;
+  color: #fff;
+  animation: solvedPop 0.7s var(--bounce);
+}
+@keyframes solvedPop{ 0%{ transform: scale(0) } 60%{ transform: scale(1.3) } 100%{ transform: scale(1) } }
+
+/* coins answer choices */
+.coins-label{
+  position: fixed;
+  bottom: calc(2vh + clamp(80px, 18vw, 130px));
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #422006; border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 900; color:#422006;
+  letter-spacing: 1px;
+}
+.coins{
+  position: fixed; bottom: 2vh; left: 0; right: 0;
+  z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 2vw, 14px);
+  padding: 0 clamp(8px, 3vw, 18px);
+}
+.coin-pick{
+  position: relative;
+  width: clamp(72px, 16vw, 100px); aspect-ratio: 1;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.coin-pick:active{ transform: scale(0.92); }
+.coin-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, #fde047, #d97706);
+  border: 4px solid #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset -8px -10px 14px rgba(0,0,0,0.18);
+}
+.coin-num{
+  font-size: clamp(28px, 7vw, 42px); color:#422006;
+  -webkit-text-stroke: 1.8px #fff;
+  text-shadow: 2px 2px 0 #fff;
+  font-weight: 900;
+}
+.coin-pick.wobble{ animation: wobble 0.5s ease-in-out; }
+.coin-pick.flying{ pointer-events: none; }
+
+.flying-coin{
+  position: fixed; pointer-events: none; z-index: 200;
+  background: linear-gradient(180deg, #fde047, #d97706);
+  border: 4px solid #fff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 7vw, 42px); color:#422006;
+  -webkit-text-stroke: 1.8px #fff;
+  font-weight: 900;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #422006; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#422006;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #422006; text-shadow:4px 6px 0 #fbbf24; }
+.celeb-count{ color:#422006; text-shadow:2px 2px 0 #fbbf24; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">PIRATE COMPASS</div>
+    <div class="title-hero">🧭</div>
+    <div class="title-sub">Find the missing coin in the row!</div>
+    <button class="start-btn" id="btnStart">🏴‍☠️ Set Sail</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">What's missing?</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <span class="compass-wheel">🧭</span>
+  <span class="pirate" id="pirate">🏴‍☠️</span>
+
+  <div class="parchment-label">PIRATE'S MAP</div>
+  <div class="parchment" id="parchment"></div>
+
+  <div class="progress-pill">🪙 <span id="progress">0</span> / 16</div>
+
+  <div class="coins-label">FIND THE MISSING COIN</div>
+  <div class="coins" id="coins"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">TREASURE!</div>
+    <div class="title-hero">🪙</div>
+    <div class="celeb-count" id="celebCount">All coins found!</div>
+    <button class="start-btn" id="btnAgain">🏴‍☠️ Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [12,13,14,15,16,17];
+
+let roundIdx = 0, promptIdx = 0, solved = 0;
+let currentMissing = null;
+let missingSlotEl = null;
+let hintTimer = null;
+let coinEls = [];
+let busy = false;
+
+function setupPuzzle(){
+  currentMissing = NUMS[Math.floor(Math.random() * NUMS.length)];
+  const parch = $('parchment');
+  parch.innerHTML = '';
+  NUMS.forEach(n => {
+    const s = document.createElement('div');
+    s.className = 'parch-slot';
+    s.dataset.n = n;
+    if(n === currentMissing){
+      s.classList.add('missing');
+      s.textContent = '?';
+      missingSlotEl = s;
+    } else {
+      s.textContent = n;
+    }
+    parch.appendChild(s);
+  });
+  // coin choices
+  const coins = $('coins');
+  coins.innerHTML = '';
+  coinEls = [];
+  shuffle(NUMS).forEach(n => {
+    const c = document.createElement('div');
+    c.className = 'coin-pick';
+    c.dataset.n = n;
+    c.innerHTML = `<div class="coin-disc"><span class="coin-num">${n}</span></div>`;
+    onTap(c, () => handleCoinTap(c, n));
+    coins.appendChild(c);
+    coinEls.push(c);
+  });
+}
+
+function handleCoinTap(el, n){
+  if(busy) return;
+  if(n === currentMissing){
+    busy = true;
+    el.classList.add('flying');
+    audio.tone('sparkle');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    flyCoinToSlot(el, n);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => audio.speakPhrase('whats_missing'), 1100);
+  }
+}
+
+function flyCoinToSlot(el, n){
+  const sR = el.getBoundingClientRect();
+  const slotR = missingSlotEl.getBoundingClientRect();
+  const tx = slotR.left + slotR.width/2 - sR.width/2;
+  const ty = slotR.top + slotR.height/2 - sR.height/2;
+  const fly = document.createElement('div');
+  fly.className = 'flying-coin';
+  fly.textContent = n;
+  fly.style.left = '0'; fly.style.top = '0';
+  fly.style.width  = sR.width + 'px';
+  fly.style.height = sR.height + 'px';
+  fly.style.transform = `translate(${sR.left}px, ${sR.top}px)`;
+  document.body.appendChild(fly);
+  const peakX = (sR.left + tx) / 2;
+  const peakY = Math.min(sR.top, ty) - 60;
+  fly.animate(
+    [
+      { transform: `translate(${sR.left}px, ${sR.top}px) scale(1) rotate(0)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) scale(1.05) rotate(180deg)`, offset: 0.55 },
+      { transform: `translate(${tx}px, ${ty}px) scale(0.7) rotate(360deg)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 700, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    fly.remove();
+    missingSlotEl.classList.remove('missing');
+    missingSlotEl.classList.add('solved');
+    missingSlotEl.textContent = n;
+    $('pirate').classList.add('cheer');
+    setTimeout(() => $('pirate').classList.remove('cheer'), 700);
+    audio.tone('ding');
+    audio.speakNumber(n);
+    const sR2 = missingSlotEl.getBoundingClientRect();
+    starBurst(sR2.left + sR2.width/2, sR2.top + sR2.height/2);
+    burstConfetti(sR2.left + sR2.width/2, sR2.top + sR2.height/2, 14);
+    solved++;
+    $('progress').textContent = solved;
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(solved >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 700);
+  }, 720);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  setupPuzzle();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('whats_missing');
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    coinEls.forEach(c => {
+      if(Number(c.dataset.n) === currentMissing){
+        c.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakPhrase('whats_missing');
+    scheduleHint();
+  }, 8000);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  clearTimeout(hintTimer);
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${solved} missing coins found!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; solved = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

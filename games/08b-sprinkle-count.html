@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ec4899">
+<title>Sprinkle Count · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 35%, #fda4af 75%, #ec4899 100%);
+  color: #831843;
+}
+.back-home-btn{ color:#831843; border-color:#fde047; }
+
+.baker{
+  position: absolute; top: 12vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(56px, 14vw, 90px);
+  z-index: 5;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+  animation: heroFloat 2.6s ease-in-out infinite;
+}
+.baker.cheer{ animation: bcheer 0.7s var(--bounce); }
+@keyframes bcheer{
+  0%{ transform: translateX(-50%) scale(1); }
+  30%{ transform: translateX(-50%) scale(1.2) rotate(-10deg); }
+  60%{ transform: translateX(-50%) scale(1.1) rotate(10deg); }
+  100%{ transform: translateX(-50%) scale(1); }
+}
+
+/* customer order ticket — shows the TARGET number prominently */
+.order-ticket{
+  position: absolute; top: 11vh; right: 4vw;
+  z-index: 6;
+  background: #fff; color:#831843;
+  border: 4px solid #831843; border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 12px; font-weight: 900;
+  text-align: center; letter-spacing: 1px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.order-ticket-num{
+  font-size: clamp(36px, 9vw, 56px);
+  color: #be123c;
+  -webkit-text-stroke: 2.5px #831843;
+  text-shadow: 2px 3px 0 #831843;
+  font-weight: 900;
+  line-height: 1; margin: 4px 0;
+}
+.order-ticket-sub{ font-size: 11px; }
+
+/* cake grid */
+.cakes{
+  position: absolute; top: 28vh; left: 0; right: 0; bottom: 18vh;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 2.5vw, 18px);
+  padding: 0 clamp(14px, 4vw, 26px);
+  z-index: 3;
+  align-content: center;
+}
+.cake-pad{
+  position: relative;
+  aspect-ratio: 1 / 1;
+  cursor: pointer; touch-action: manipulation;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(254,243,199,0.92) 100%);
+  border: 4px solid #831843;
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  transition: transform 0.15s var(--bounce);
+  overflow: hidden;
+}
+.cake-pad:active{ transform: scale(0.93); }
+.cake-shape{
+  position: relative;
+  width: 88%; height: 88%;
+  background: linear-gradient(180deg, #fde2e7 0%, #f472b6 100%);
+  border: 3px solid #831843;
+  border-radius: 50% 50% 14% 14%;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 14px 8px 6px;
+  box-shadow: inset 0 -6px 12px rgba(0,0,0,0.15);
+}
+.cake-shape::before{
+  content:''; position: absolute; top: 0; left: 8%; right: 8%;
+  height: 20%;
+  background: #fff;
+  border-radius: 50% 50% 0 0;
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.1);
+}
+.sprinkle{
+  position: relative; z-index: 2;
+  width: clamp(8px, 2vw, 12px); height: clamp(4px, 1vw, 6px);
+  background: var(--sc);
+  border-radius: 999px;
+  transform: rotate(var(--rot,0deg));
+}
+.cake-pad.wobble{ animation: wobble 0.5s ease-in-out; }
+.cake-pad.served{ animation: served 0.7s var(--bounce); pointer-events: none; }
+@keyframes served{
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.15); background: linear-gradient(180deg, #fde047 0%, #fbbf24 100%); }
+  100% { transform: scale(1); background: linear-gradient(180deg, #fde047 0%, #fbbf24 100%); }
+}
+
+/* delivery truck at bottom shows progress */
+.truck{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #fde047, #f59e0b);
+  border: 4px solid #831843; border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 14px; font-weight: 900; color:#831843;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.truck-count{
+  font-size: 22px;
+  -webkit-text-stroke: 1.5px #fff; color:#dc2626;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #831843; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#831843;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #831843; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#831843; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">SPRINKLE COUNT</div>
+    <div class="title-hero">🧁</div>
+    <div class="title-sub">Count the sprinkles · Find the right cake!</div>
+    <button class="start-btn" id="btnStart">🧁 Take Orders</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Find</span>
+    <span class="hud-target" id="hudTarget">9</span>
+    <span style="font-size:clamp(13px,3.4vw,18px);font-weight:900;">sprinkles</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <span class="baker" id="baker">👩‍🍳</span>
+  <div class="order-ticket">
+    <div class="order-ticket-sub">ORDER</div>
+    <div class="order-ticket-num" id="orderNum">9</div>
+    <div class="order-ticket-sub">SPRINKLES</div>
+  </div>
+
+  <div class="cakes" id="cakes"></div>
+
+  <div class="progress-pill">🚚 <span id="progress">0</span> / 16</div>
+
+  <div class="truck">
+    🚚 served: <span class="truck-count" id="truckCount">0</span>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">SOLD OUT!</div>
+    <div class="title-hero">🧁</div>
+    <div class="celeb-count" id="celebCount">All orders done!</div>
+    <button class="start-btn" id="btnAgain">🧁 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [7,8,9,10,11,12];
+const SPRINKLE_COLORS = ['#dc2626','#fbbf24','#16a34a','#2563eb','#7c3aed','#db2777','#f97316','#0ea5e9'];
+
+let roundIdx = 0, promptIdx = 0, served = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let cakeEls = [];
+let busy = false;
+
+function spawnCakes(){
+  const grid = $('cakes');
+  grid.innerHTML = '';
+  cakeEls = [];
+  shuffle(NUMS).forEach(n => {
+    const c = document.createElement('div');
+    c.className = 'cake-pad';
+    c.dataset.n = n;
+    let sprinkles = '';
+    for(let i = 0; i < n; i++){
+      const color = pick(SPRINKLE_COLORS);
+      const rot = (Math.random() * 180 - 90) + 'deg';
+      sprinkles += `<span class="sprinkle" style="--sc:${color};--rot:${rot}"></span>`;
+    }
+    c.innerHTML = `<div class="cake-shape">${sprinkles}</div>`;
+    onTap(c, () => handleCakeTap(c, n));
+    grid.appendChild(c);
+    cakeEls.push(c);
+  });
+}
+
+function handleCakeTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('served');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    $('baker').classList.add('cheer');
+    setTimeout(() => $('baker').classList.remove('cheer'), 700);
+    served++;
+    $('truckCount').textContent = served;
+    $('progress').textContent = served;
+    const r = el.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    burstConfetti(r.left + r.width/2, r.top + r.height/2, 14);
+    setTimeout(() => audio.speakNumber(n), 350);
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(served >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 1000);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('how_many');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  $('orderNum').textContent = currentTarget;
+  spawnCakes();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('how_many');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    cakeEls.forEach(c => {
+      if(Number(c.dataset.n) === currentTarget && !c.classList.contains('served')){
+        c.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.5) drop-shadow(0 0 16px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 8000);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  clearTimeout(hintTimer);
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${served} cakes served!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; served = 0;
+  $('progress').textContent = '0';
+  $('truckCount').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

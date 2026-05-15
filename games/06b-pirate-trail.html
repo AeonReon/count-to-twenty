@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#92400e">
+<title>Pirate Trail · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 40%),
+    linear-gradient(180deg, #fef3c7 0%, #fde68a 50%, #d97706 100%);
+  color: #422006;
+}
+.back-home-btn{ color:#422006; border-color:#fbbf24; }
+
+/* parchment-style map background */
+.map{
+  position: absolute; top: 12vh; left: 4vw; right: 4vw; bottom: 20vh;
+  background:
+    repeating-radial-gradient(circle at 20% 30%, transparent 0 4px, rgba(146,64,14,0.04) 4px 5px),
+    linear-gradient(180deg, #fef3c7 0%, #fde68a 80%);
+  border: 5px solid #422006;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 0 40px rgba(146,64,14,0.18);
+  z-index: 2;
+}
+.map::before{
+  content:''; position: absolute; inset: 6px;
+  border: 2px dashed rgba(146,64,14,0.4);
+  border-radius: 12px;
+  pointer-events: none;
+}
+.compass{
+  position: absolute; top: 1vh; right: 6vw;
+  font-size: clamp(28px, 7vw, 44px); z-index: 5;
+  opacity: 0.7;
+}
+.treasure-icon{
+  position: absolute; top: 14vh; right: 8vw;
+  font-size: clamp(50px, 12vw, 80px);
+  z-index: 4;
+  animation: heroFloat 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px #fde047);
+  pointer-events: none;
+}
+.treasure-icon.opened{ animation: chestOpen 0.7s var(--bounce); }
+@keyframes chestOpen{ 0%{ transform: scale(1); } 50%{ transform: scale(1.3) rotate(-10deg); } 100%{ transform: scale(1.2); } }
+
+/* X marks scattered across the map */
+.x-mark{
+  position: absolute;
+  width: clamp(60px, 14vw, 90px);
+  height: clamp(60px, 14vw, 90px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+  z-index: 5;
+}
+.x-mark:active{ transform: scale(0.92); }
+.x-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, #fef3c7, #d97706);
+  border: 4px solid #422006;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.4), inset -6px -8px 12px rgba(0,0,0,0.18);
+}
+.x-disc::before{
+  content: '✗';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(46px, 11vw, 70px);
+  color: #be123c;
+  font-weight: 900;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+}
+.x-num{
+  position: relative; z-index: 3;
+  font-size: clamp(20px, 5vw, 32px); color:#fef3c7;
+  -webkit-text-stroke: 2px #422006;
+  text-shadow: 1px 2px 0 #422006;
+  font-weight: 900;
+  background: rgba(0,0,0,0.3);
+  border-radius: 50%;
+  padding: 4px 8px;
+}
+.x-mark.wobble{ animation: wobble 0.5s ease-in-out; }
+.x-mark.stamped .x-disc{
+  background: linear-gradient(180deg, #86efac, #16a34a);
+  border-color: #fde047;
+  box-shadow: 0 0 18px #fde047;
+}
+.x-mark.stamped .x-disc::before{ content: '⭐'; color: #fde047; }
+.x-mark.stamped{ pointer-events: none; }
+
+/* pirate that walks along the trail */
+.pirate{
+  position: absolute; top: 0; left: 0;
+  font-size: clamp(50px, 12vw, 78px);
+  z-index: 7; pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+  transition: top 0.8s cubic-bezier(0.34,1.56,0.64,1), left 0.8s cubic-bezier(0.34,1.56,0.64,1);
+  animation: pirateIdle 1.6s ease-in-out infinite;
+}
+@keyframes pirateIdle{ 0%,100%{ transform: rotate(-5deg) } 50%{ transform: rotate(5deg) } }
+
+/* the "next target" pill */
+.next-pill{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #fef3c7, #fbbf24);
+  border: 4px solid #422006; border-radius: 20px;
+  padding: 12px 22px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+  display: flex; align-items: center; gap: 14px;
+}
+.next-pill-label{
+  font-size: 13px; font-weight: 900; color:#422006;
+  letter-spacing: 1px;
+}
+.next-pill-target{
+  font-size: clamp(46px, 12vw, 68px); color:#be123c;
+  -webkit-text-stroke: 3px #422006;
+  text-shadow: 2px 3px 0 #422006;
+  font-weight: 900; line-height: 1;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #422006; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#422006;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #422006; text-shadow:4px 6px 0 #fbbf24; }
+.celeb-count{ color:#422006; text-shadow:2px 2px 0 #fbbf24; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">PIRATE TRAIL</div>
+    <div class="title-hero">🗺️</div>
+    <div class="title-sub">Follow the trail in order to find the treasure!</div>
+    <button class="start-btn" id="btnStart">🏴‍☠️ Find Treasure</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Next mark</span>
+    <span class="hud-target" id="hudTarget">5</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <span class="compass">🧭</span>
+  <div class="map" id="map">
+    <span class="treasure-icon" id="chest">💰</span>
+  </div>
+  <div class="pirate" id="pirate">🏴‍☠️</div>
+
+  <div class="next-pill">
+    <span class="next-pill-label">NEXT</span>
+    <span class="next-pill-target" id="nextTarget">5</span>
+  </div>
+
+  <div class="progress-pill">⭐ <span id="progress">0</span> / 16</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">TREASURE!</div>
+    <div class="title-hero">💰</div>
+    <div class="celeb-count" id="celebCount">All trails followed!</div>
+    <button class="start-btn" id="btnAgain">🏴‍☠️ Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [5,6,7,8,9,10];
+
+let roundIdx = 0, totalStamped = 0, nextIdx = 0;
+let currentOrder = [];
+let xEls = [];
+let busy = false;
+
+function placeXs(){
+  const map = $('map');
+  // remove old X marks (keep treasure icon)
+  [...map.querySelectorAll('.x-mark')].forEach(el => el.remove());
+  xEls = [];
+  const r = map.getBoundingClientRect();
+  // scatter 6 X marks within the map, avoiding edges
+  const positions = scatterPositions(r.width, r.height, 6);
+  shuffle(NUMS).forEach((n, i) => {
+    const x = document.createElement('div');
+    x.className = 'x-mark';
+    x.dataset.n = n;
+    x.innerHTML = `<div class="x-disc"></div><span class="x-num">${n}</span>`;
+    x.style.left = positions[i].x + 'px';
+    x.style.top  = positions[i].y + 'px';
+    onTap(x, () => handleXTap(x, n));
+    map.appendChild(x);
+    xEls.push(x);
+  });
+  // reset pirate to the leftmost X
+  movePirateTo(xEls[0]);
+}
+
+function scatterPositions(w, h, n){
+  const pad = 30;
+  const cells = [];
+  const cols = 3, rows = 2;
+  const cw = (w - pad*2) / cols, ch = (h - pad*2) / rows;
+  for(let r = 0; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      cells.push({
+        x: pad + cw*c + (Math.random()-0.5)*cw*0.4,
+        y: pad + ch*r + (Math.random()-0.5)*ch*0.4
+      });
+    }
+  }
+  return cells.slice(0, n);
+}
+
+function movePirateTo(targetEl){
+  const r = targetEl.getBoundingClientRect();
+  $('pirate').style.left = (r.left + r.width/2 - 30) + 'px';
+  $('pirate').style.top  = (r.top - 50) + 'px';
+}
+
+function handleXTap(el, n){
+  if(busy || el.classList.contains('stamped')) return;
+  const want = currentOrder[nextIdx];
+  if(n === want){
+    busy = true;
+    el.classList.add('stamped');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    movePirateTo(el);
+    const r = el.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    nextIdx++;
+    totalStamped++;
+    $('progress').textContent = totalStamped;
+    if(nextIdx >= currentOrder.length){
+      $('chest').classList.add('opened');
+      audio.tone('blast');
+      burstConfetti(innerWidth/2, innerHeight*0.4, 30);
+      setTimeout(() => { busy = false; finishRound(); }, 900);
+    } else {
+      const next = currentOrder[nextIdx];
+      $('hudTarget').textContent = next;
+      $('nextTarget').textContent = next;
+      setTimeout(() => {
+        audio.clearQueue();
+        audio.speakNumber(next);
+        busy = false;
+      }, 800);
+    }
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('tap_the_number');
+      audio.speakNumber(want);
+    }, 1100);
+  }
+}
+
+function startRound(){
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  currentOrder = NUMS.slice().sort((a, b) => a - b);
+  nextIdx = 0;
+  $('hudTarget').textContent = currentOrder[0];
+  $('nextTarget').textContent = currentOrder[0];
+  $('chest').classList.remove('opened');
+  placeXs();
+  showBanner('Round ' + (roundIdx+1), 'Smallest first!');
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('tap_the_number');
+    audio.speakNumber(currentOrder[0]);
+  }, 1300);
+}
+
+function finishRound(){
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${totalStamped} marks found!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; totalStamped = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#65a30d">
+<title>Snail Race · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef9c3 0%, #d9f99d 35%, #86efac 70%, #4ade80 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fde047; }
+
+.flower{ position: absolute; font-size: clamp(28px, 6vw, 40px); pointer-events: none; opacity: 0.85; }
+.f1{ top: 11vh; left: 6vw; }
+.f2{ top: 13vh; right: 8vw; animation: heroFloat 3s ease-in-out infinite; }
+.f3{ bottom: 28vh; left: 4vw; }
+
+.finish-line{
+  position: absolute; right: 6vw; top: 24vh; bottom: 32vh;
+  width: 8px;
+  background: repeating-linear-gradient(180deg, #1e293b 0 12px, #fff 12px 24px);
+  z-index: 4; pointer-events: none;
+}
+.finish-flag-top{
+  position: absolute; right: 4vw; top: 22vh;
+  font-size: clamp(28px, 7vw, 44px);
+  z-index: 5; pointer-events: none;
+  animation: heroFloat 1.5s ease-in-out infinite;
+}
+
+/* two leaf tracks for snails */
+.lanes{
+  position: absolute; top: 24vh; left: 5vw; right: 14vw; bottom: 30vh;
+  z-index: 2; display: flex; flex-direction: column; justify-content: center; gap: 10px;
+}
+.leaf-lane{
+  position: relative;
+  height: 30%;
+  background: linear-gradient(180deg, #bbf7d0 0%, #86efac 100%);
+  border: 4px solid #16a34a;
+  border-radius: 50% 5% 5% 50% / 50% 5% 5% 50%;
+  display: flex; align-items: center;
+}
+.leaf-lane::before{
+  content:''; position:absolute; top: 50%; left: 0; right: 0; height: 2px;
+  background: #16a34a; opacity: 0.4;
+}
+.lane-label{
+  position: absolute; left: 8px; top: 50%;
+  transform: translateY(-50%);
+  background: #fff; color:#14532d;
+  border: 3px solid #14532d; border-radius: 10px;
+  padding: 2px 8px;
+  font-size: clamp(20px, 5vw, 30px); font-weight: 900;
+  z-index: 4;
+}
+.snail-race{
+  position: absolute; left: 70px; top: 50%;
+  transform: translateY(-50%);
+  width: clamp(70px, 16vw, 100px);
+  display: flex; align-items: center;
+  transition: left 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 5;
+  animation: snailCrawl 1.8s ease-in-out infinite;
+}
+@keyframes snailCrawl{ 0%,100%{ transform: translateY(-50%) rotate(-3deg) } 50%{ transform: translateY(-50%) rotate(3deg) } }
+.snail-race.boost{ animation: snailBoost 0.3s ease-out; }
+@keyframes snailBoost{ 0%,100%{ transform: translateY(-50%) scale(1) } 50%{ transform: translateY(-50%) scale(1.12) } }
+.snail-emoji{
+  font-size: clamp(50px, 12vw, 76px);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+.snail-label{
+  position: absolute; right: -8px; top: -10px;
+  background: #fff; color:#14532d;
+  border: 3px solid #14532d; border-radius: 10px;
+  padding: 2px 8px;
+  font-size: clamp(18px, 4.5vw, 26px); font-weight: 900;
+}
+
+.tap-zone{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  width: clamp(220px, 56vw, 380px);
+  height: clamp(100px, 22vw, 140px);
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 100%);
+  border: 5px solid #14532d;
+  border-radius: 22px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 -6px 10px rgba(0,0,0,0.15);
+  transition: transform 0.08s var(--bounce);
+}
+.tap-zone:active{ transform: translateX(-50%) scale(0.95); }
+.tap-zone-label{ font-size: 12px; font-weight: 900; color:#14532d; letter-spacing: 1px; margin-bottom: 4px; }
+.tap-zone-target{
+  font-size: clamp(46px, 12vw, 68px); color:#dc2626;
+  -webkit-text-stroke: 3px #14532d;
+  text-shadow: 3px 4px 0 #14532d;
+  font-weight: 900; line-height: 1;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #14532d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#14532d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">SNAIL RACE</div>
+    <div class="title-hero">🐌</div>
+    <div class="title-sub">Tap fast · Help your snail win!</div>
+    <button class="start-btn" id="btnStart">🐌 Start Racing</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Cheer for</span>
+    <span class="hud-target" id="hudTarget">17</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="flower f1">🌼</div>
+  <div class="flower f2">🌻</div>
+  <div class="flower f3">🌷</div>
+  <div class="finish-flag-top">🏁</div>
+  <div class="finish-line"></div>
+
+  <div class="lanes">
+    <div class="leaf-lane">
+      <span class="lane-label" id="labelT">14</span>
+      <div class="snail-race" id="snailT">
+        <span class="snail-emoji">🐌</span>
+        <span class="snail-label" id="numT">14</span>
+      </div>
+    </div>
+    <div class="leaf-lane">
+      <span class="lane-label" id="labelB">19</span>
+      <div class="snail-race" id="snailB">
+        <span class="snail-emoji">🐌</span>
+        <span class="snail-label" id="numB">19</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-pill">🏆 wins: <span id="wins">0</span> / 4</div>
+
+  <div class="tap-zone" id="tapZone">
+    <div class="tap-zone-label">TAP FOR SNAIL</div>
+    <div class="tap-zone-target" id="tapTarget">17</div>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">SNAIL CHAMPION!</div>
+    <div class="title-hero">🐌</div>
+    <div class="celeb-count" id="celebCount">All races won!</div>
+    <button class="start-btn" id="btnAgain">🐌 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [14,15,16,17,18,19];
+
+const STEPS_TO_WIN = 10;
+let roundIdx = 0, wins = 0;
+let topNum = 14, botNum = 19;
+let topSteps = 0, botSteps = 0;
+let target = 14;
+let raceActive = false;
+let opponentTimer = null;
+
+function pickPair(){ const s = shuffle(NUMS); return [s[0], s[1]]; }
+
+function setupRace(){
+  const [a, b] = pickPair();
+  topNum = a; botNum = b;
+  target = Math.random() < 0.5 ? a : b;
+  topSteps = 0; botSteps = 0;
+  $('labelT').textContent = a;
+  $('labelB').textContent = b;
+  $('numT').textContent = a;
+  $('numB').textContent = b;
+  $('snailT').style.left = '70px';
+  $('snailB').style.left = '70px';
+  $('tapTarget').textContent = target;
+  $('hudTarget').textContent = target;
+}
+
+function moveSnail(which, steps){
+  const el = which === 'T' ? $('snailT') : $('snailB');
+  const pct = (steps / STEPS_TO_WIN) * 88;
+  el.style.left = `calc(70px + ${pct}%)`;
+  el.classList.add('boost');
+  setTimeout(() => el.classList.remove('boost'), 280);
+}
+
+function handleTap(){
+  if(!raceActive) return;
+  audio.tone('pop');
+  if(target === topNum){
+    topSteps++;
+    moveSnail('T', topSteps);
+    if(topSteps >= STEPS_TO_WIN) finishRace('T');
+  } else {
+    botSteps++;
+    moveSnail('B', botSteps);
+    if(botSteps >= STEPS_TO_WIN) finishRace('B');
+  }
+}
+
+function tickOpponent(){
+  if(!raceActive) return;
+  if(target === topNum){
+    botSteps++;
+    moveSnail('B', botSteps);
+    if(botSteps >= STEPS_TO_WIN) finishRace('B');
+  } else {
+    topSteps++;
+    moveSnail('T', topSteps);
+    if(topSteps >= STEPS_TO_WIN) finishRace('T');
+  }
+}
+
+function finishRace(winner){
+  if(!raceActive) return;
+  raceActive = false;
+  clearInterval(opponentTimer);
+  const playerSide = target === topNum ? 'T' : 'B';
+  const playerWon = winner === playerSide;
+  if(playerWon){
+    wins++;
+    $('wins').textContent = wins;
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    const winEl = winner === 'T' ? $('snailT') : $('snailB');
+    const r = winEl.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    burstConfetti(r.left + r.width/2, r.top + r.height/2, 24);
+  } else {
+    audio.clearQueue();
+    audio.speakPhrase('lets_play');
+  }
+  audio.tone('ding');
+  setTimeout(() => audio.speakNumber(target), 700);
+  roundIdx++;
+  if(roundIdx >= 4){ setTimeout(showCeleb, 1500); }
+  else { setTimeout(startNewRace, 1700); }
+}
+
+function startNewRace(){
+  setupRace();
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  showBanner('Race ' + (roundIdx+1), 'Cheer for ' + target);
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('lets_go');
+    setTimeout(() => audio.speakNumber(target), 700);
+    raceActive = true;
+    opponentTimer = setInterval(tickOpponent, 1100);
+  }, 1300);
+}
+
+function showCeleb(){
+  raceActive = false;
+  clearInterval(opponentTimer);
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${wins} race${wins === 1 ? '' : 's'} won!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; wins = 0;
+  $('wins').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startNewRace, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('tapZone'), () => handleTap());
+</script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#db2777">
+<title>Music Box · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 35%, #f0abfc 70%, #c084fc 100%);
+  color: #831843;
+}
+.back-home-btn{ color:#831843; border-color:#fde047; }
+
+.music-note{
+  position: absolute; pointer-events: none;
+  font-size: clamp(20px, 5vw, 32px);
+  opacity: 0.65;
+  animation: noteFloat var(--dur,4s) ease-in-out infinite var(--delay,0s);
+}
+@keyframes noteFloat{
+  0%   { transform: translateY(0) rotate(-10deg); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { transform: translateY(-180px) rotate(20deg); opacity: 0; }
+}
+
+/* music box at top — shows the sequence playing */
+.box{
+  position: absolute; top: 13vh; left: 50%;
+  transform: translateX(-50%); z-index: 4;
+  width: clamp(220px, 56vw, 360px);
+  background: linear-gradient(180deg, #fde68a 0%, #fbbf24 100%);
+  border: 5px solid #92400e;
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.box::before{
+  content:'♪ MUSIC BOX ♪';
+  font-size: 12px; font-weight: 900; color:#7c2d12;
+  letter-spacing: 1px;
+}
+.box-screen{
+  width: 100%;
+  background: #1e1b4b;
+  border-radius: 10px;
+  padding: 14px 10px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px;
+  min-height: clamp(70px, 18vw, 110px);
+  box-shadow: inset 0 4px 10px rgba(0,0,0,0.6);
+}
+.note-step{
+  width: clamp(40px, 9vw, 56px);
+  height: clamp(40px, 9vw, 56px);
+  background: rgba(255,255,255,0.1);
+  border: 3px dashed rgba(255,255,255,0.3);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(22px, 5.5vw, 34px);
+  color: #fde047;
+  -webkit-text-stroke: 1.5px rgba(0,0,0,0.5);
+  font-weight: 900;
+  transition: all 0.3s var(--bounce);
+}
+.note-step.lit{
+  background: linear-gradient(180deg, #f472b6, #db2777);
+  border: 3px solid #fde047;
+  box-shadow: 0 0 18px #f472b6;
+  transform: scale(1.1);
+}
+.note-step.hidden{
+  background: rgba(255,255,255,0.1);
+  border: 3px dashed rgba(255,255,255,0.3);
+  color: transparent;
+}
+.note-step.tapped{
+  background: linear-gradient(180deg, #86efac, #16a34a);
+  border: 3px solid #fde047;
+  color: #fff;
+  box-shadow: 0 0 12px #16a34a;
+}
+
+/* sequence playback indicator */
+.box-status{
+  font-size: 12px; font-weight: 900; color:#7c2d12;
+  letter-spacing: 1px;
+  text-align: center;
+  min-height: 16px;
+}
+
+/* the choice buttons — all 6 numbers in the window */
+.keys-label{
+  position: fixed;
+  bottom: calc(2vh + clamp(80px, 18vw, 130px));
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #831843; border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 900; color:#831843;
+  letter-spacing: 1px;
+}
+.keys{
+  position: fixed; bottom: 2vh; left: 0; right: 0;
+  z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 2vw, 14px);
+  padding: 0 clamp(8px, 3vw, 18px);
+}
+.key{
+  position: relative;
+  width: clamp(64px, 14vw, 95px);
+  aspect-ratio: 1;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.key:active{ transform: scale(0.92); }
+.key-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #fff;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+.key-num{
+  font-size: clamp(28px, 7vw, 44px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+}
+.key.wobble{ animation: wobble 0.5s ease-in-out; }
+.key.lit{ animation: keyLit 0.5s var(--bounce); }
+@keyframes keyLit{ 0%,100%{ transform: scale(1) } 50%{ transform: scale(1.15) } }
+.kc1{ --c1:#fbcfe8; --c2:#db2777; }
+.kc2{ --c1:#fde047; --c2:#d97706; }
+.kc3{ --c1:#93c5fd; --c2:#2563eb; }
+.kc4{ --c1:#86efac; --c2:#16a34a; }
+.kc5{ --c1:#c4b5fd; --c2:#7c3aed; }
+.kc6{ --c1:#fca5a5; --c2:#dc2626; }
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #831843; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#831843;
+}
+
+/* princess pops out at the end */
+.princess-pop{
+  position: fixed; top: 30vh; left: 50%;
+  transform: translateX(-50%) scale(0);
+  font-size: clamp(80px, 22vw, 140px); z-index: 50;
+  pointer-events: none;
+  transition: transform 0.7s var(--bounce);
+}
+.princess-pop.show{ transform: translateX(-50%) scale(1); animation: dance 1s ease-in-out infinite; }
+@keyframes dance{ 0%,100%{ transform: translateX(-50%) scale(1) rotate(-8deg) } 50%{ transform: translateX(-50%) scale(1.1) rotate(8deg) } }
+
+.celeb-big{ -webkit-text-stroke:3px #831843; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#831843; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">MUSIC BOX</div>
+    <div class="title-hero">🎵</div>
+    <div class="title-sub">Listen and tap back the same numbers!</div>
+    <button class="start-btn" id="btnStart">🎵 Start Listening</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt" id="hudPrompt">Listen</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="box">
+    <div class="box-screen" id="screen"></div>
+    <div class="box-status" id="status">▶ Playing...</div>
+  </div>
+
+  <div class="progress-pill">🎵 <span id="progress">0</span> / 4</div>
+  <div class="keys-label">TAP THE SEQUENCE BACK</div>
+  <div class="keys" id="keys"></div>
+
+  <div class="princess-pop" id="princessPop">👸</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">PERFECT TUNE!</div>
+    <div class="title-hero">🎵</div>
+    <div class="celeb-count" id="celebCount">All melodies played!</div>
+    <button class="start-btn" id="btnAgain">🎵 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [3,4,5,6,7,8];  // window for 4b
+const COLORS = ['kc1','kc2','kc3','kc4','kc5','kc6'];
+
+// Round 1: 2-note sequence
+// Round 2: 3-note
+// Round 3: 3-note (different)
+// Round 4: 4-note
+const SEQ_LENGTHS = [2, 3, 3, 4];
+let roundIdx = 0, completed = 0;
+let sequence = [];
+let nextIdx = 0;
+let busy = false;
+let keyEls = [];
+
+function spawnKeys(){
+  const wrap = $('keys');
+  wrap.innerHTML = '';
+  keyEls = [];
+  const colors = shuffle(COLORS);
+  NUMS.forEach((n, i) => {
+    const k = document.createElement('div');
+    k.className = 'key';
+    k.dataset.n = n;
+    k.innerHTML = `<div class="key-disc ${colors[i % colors.length]}"><span class="key-num">${n}</span></div>`;
+    onTap(k, () => handleKeyTap(k, n));
+    wrap.appendChild(k);
+    keyEls.push(k);
+  });
+}
+
+function drawScreen(showAll){
+  const screen = $('screen');
+  screen.innerHTML = '';
+  sequence.forEach((n, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'note-step hidden';
+    slot.dataset.i = i;
+    slot.textContent = n;
+    if(showAll) slot.classList.remove('hidden');
+    screen.appendChild(slot);
+  });
+}
+
+function playSequence(){
+  busy = true;
+  $('status').textContent = '▶ Listen!';
+  $('hudPrompt').textContent = 'Listen';
+  drawScreen(false);
+  const slots = $('screen').querySelectorAll('.note-step');
+  let i = 0;
+  const playStep = () => {
+    if(i >= sequence.length){
+      $('status').textContent = '🎤 Your turn!';
+      $('hudPrompt').textContent = 'Tap';
+      nextIdx = 0;
+      busy = false;
+      return;
+    }
+    const slot = slots[i];
+    slot.classList.remove('hidden');
+    slot.classList.add('lit');
+    // also flash the matching key
+    const key = keyEls.find(k => Number(k.dataset.n) === sequence[i]);
+    if(key) key.classList.add('lit');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakNumber(sequence[i]);
+    setTimeout(() => {
+      slot.classList.remove('lit');
+      slot.classList.add('hidden');
+      if(key) key.classList.remove('lit');
+      i++;
+      setTimeout(playStep, 350);
+    }, 900);
+  };
+  setTimeout(playStep, 700);
+}
+
+function handleKeyTap(el, n){
+  if(busy) return;
+  const expect = sequence[nextIdx];
+  if(n === expect){
+    el.classList.add('lit');
+    setTimeout(() => el.classList.remove('lit'), 400);
+    audio.tone('ding');
+    audio.speakNumber(n);
+    // light up corresponding slot on screen as "tapped"
+    const slot = $('screen').querySelectorAll('.note-step')[nextIdx];
+    slot.classList.remove('hidden');
+    slot.classList.add('tapped');
+    nextIdx++;
+    if(nextIdx >= sequence.length){
+      // Sequence complete!
+      busy = true;
+      completed++;
+      $('progress').textContent = completed;
+      audio.clearQueue();
+      audio.speakCategory('correct');
+      $('status').textContent = '✨ Perfect!';
+      starBurst(innerWidth/2, innerHeight/2);
+      burstConfetti(innerWidth/2, innerHeight*0.4, 20);
+      roundIdx++;
+      if(roundIdx >= 4){
+        // Princess pops out for finale
+        $('princessPop').classList.add('show');
+        setTimeout(showCeleb, 2000);
+      } else {
+        setTimeout(startRound, 1700);
+      }
+    }
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    // Replay the sequence so the kid can hear it again
+    setTimeout(() => {
+      audio.speakPhrase('listen_carefully');
+      playSequence();
+    }, 1200);
+  }
+}
+
+function makeSequence(len){
+  const seq = [];
+  for(let i = 0; i < len; i++){
+    seq.push(NUMS[Math.floor(Math.random() * NUMS.length)]);
+  }
+  return seq;
+}
+
+function startRound(){
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  sequence = makeSequence(SEQ_LENGTHS[roundIdx]);
+  showBanner('Round ' + (roundIdx+1), `${SEQ_LENGTHS[roundIdx]} notes`);
+  spawnKeys();
+  setTimeout(playSequence, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${completed} tunes played!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; completed = 0;
+  $('progress').textContent = '0';
+  $('princessPop').classList.remove('show');
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+(function(){
+  setInterval(() => {
+    if(!$('scrGame').classList.contains('active')) return;
+    const n = document.createElement('div');
+    n.className = 'music-note';
+    n.textContent = pick(['♪','♫','♬','♩']);
+    n.style.left = (10 + Math.random()*80) + 'vw';
+    n.style.top = (50 + Math.random()*30) + 'vh';
+    n.style.color = pick(['#db2777','#7c3aed','#2563eb','#16a34a']);
+    n.style.setProperty('--dur', (3 + Math.random()*2) + 's');
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 5000);
+  }, 900);
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#dc2626">
+<title>Dragon Missing Egg · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #fed7aa 30%, #fca5a5 70%, #991b1b 100%);
+  color: #7f1d1d;
+}
+.back-home-btn{ color:#7f1d1d; border-color:#fde047; }
+
+.cave-l, .cave-r{
+  position: absolute; bottom: 0; font-size: clamp(40px, 10vw, 64px);
+  pointer-events: none; opacity: 0.6;
+}
+.cave-l{ left: 4vw; bottom: 14vh; }
+.cave-r{ right: 4vw; bottom: 14vh; }
+
+.dragon-mama{
+  position: absolute; top: 11vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(60px, 14vw, 96px);
+  z-index: 4;
+  filter: drop-shadow(0 0 18px #f87171);
+  animation: heroFloat 2.4s ease-in-out infinite;
+}
+.dragon-mama.cheer{ animation: cheer 0.7s var(--bounce); }
+@keyframes cheer{
+  0%{ transform: translateX(-50%) scale(1); }
+  30%{ transform: translateX(-50%) scale(1.2) rotate(-12deg); }
+  60%{ transform: translateX(-50%) scale(1.1) rotate(12deg); }
+  100%{ transform: translateX(-50%) scale(1); }
+}
+
+/* sequence display — 6 egg slots in a row, one is missing */
+.seq-label{
+  position: absolute; top: 24vh; left: 50%;
+  transform: translateX(-50%); z-index: 5;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #7f1d1d; border-radius: 14px;
+  padding: 6px 14px;
+  font-size: 12px; font-weight: 900; color:#7f1d1d;
+  letter-spacing: 1px;
+}
+.seq-row{
+  position: absolute; top: 30vh; left: 0; right: 0;
+  display: flex; justify-content: center; align-items: center;
+  gap: clamp(6px, 1.5vw, 14px);
+  padding: 0 clamp(10px, 3vw, 22px);
+  z-index: 4;
+}
+.seq-slot{
+  width: clamp(48px, 13vw, 80px);
+  aspect-ratio: 1 / 1.15;
+  background: linear-gradient(180deg, #fef3c7, #fbbf24);
+  border: 4px solid #fff;
+  border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 7vw, 44px);
+  font-weight: 900; color:#7f1d1d;
+  -webkit-text-stroke: 2px #fff;
+  text-shadow: 1px 2px 0 #7f1d1d;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.3), inset -6px -8px 12px rgba(0,0,0,0.18);
+}
+.seq-slot.missing{
+  background: rgba(255,255,255,0.2);
+  border: 4px dashed rgba(127,29,29,0.7);
+  color: #be123c;
+  -webkit-text-stroke: 2px transparent;
+  animation: missingPulse 1.4s ease-in-out infinite;
+}
+@keyframes missingPulse{ 0%,100%{ transform: scale(1) } 50%{ transform: scale(1.08) } }
+.seq-slot.solved{
+  background: linear-gradient(180deg, #86efac, #16a34a);
+  color: #fff; -webkit-text-stroke-color: #16a34a;
+  border-color: #fde047;
+  animation: solvedPop 0.7s var(--bounce);
+  box-shadow: 0 0 20px #fde047, inset -6px -8px 12px rgba(0,0,0,0.15);
+}
+@keyframes solvedPop{ 0%{ transform: scale(0) } 60%{ transform: scale(1.3) } 100%{ transform: scale(1) } }
+
+/* dragon eggs at the bottom — answer choices (6 numbers in window) */
+.eggs-label{
+  position: fixed;
+  bottom: calc(2vh + clamp(80px, 18vw, 130px));
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #7f1d1d; border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px; font-weight: 900; color:#7f1d1d;
+  letter-spacing: 1px;
+}
+.eggs{
+  position: fixed; bottom: 2vh; left: 0; right: 0;
+  z-index: 6;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(6px, 2vw, 14px);
+  padding: 0 clamp(8px, 3vw, 18px);
+}
+.egg-pick{
+  position: relative;
+  width: clamp(72px, 16vw, 110px);
+  aspect-ratio: 1 / 1.15;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.egg-pick:active{ transform: scale(0.92); }
+.egg-pick-disc{
+  position: relative;
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+  border: 4px solid #fff;
+  border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3), inset -8px -10px 14px rgba(0,0,0,0.2);
+}
+.egg-pick-num{
+  font-size: clamp(28px, 7vw, 44px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  font-weight: 900;
+}
+.egg-pick.wobble{ animation: wobble 0.5s ease-in-out; }
+.egg-pick.flying{ pointer-events: none; }
+.ec1{ --c1:#fbcfe8; --c2:#db2777; }
+.ec2{ --c1:#fde047; --c2:#d97706; }
+.ec3{ --c1:#93c5fd; --c2:#2563eb; }
+.ec4{ --c1:#86efac; --c2:#16a34a; }
+.ec5{ --c1:#c4b5fd; --c2:#7c3aed; }
+.ec6{ --c1:#fca5a5; --c2:#dc2626; }
+
+/* flying egg clone */
+.flying-egg{
+  position: fixed; pointer-events: none; z-index: 200;
+  border: 4px solid #fff; border-radius: 50% 50% 45% 45%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(28px, 7vw, 44px); color:#fff;
+  -webkit-text-stroke: 2px rgba(0,0,0,0.45); font-weight: 900;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #7f1d1d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#7f1d1d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #7f1d1d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#7f1d1d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">MISSING EGG</div>
+    <div class="title-hero">🐉</div>
+    <div class="title-sub">Which egg is missing from the row?</div>
+    <button class="start-btn" id="btnStart">🐉 Start Searching</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">What's missing?</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="cave-l">🪨</div>
+  <div class="cave-r">🪨</div>
+  <div class="dragon-mama" id="mama">🐲</div>
+
+  <div class="seq-label">DRAGON ROW</div>
+  <div class="seq-row" id="seqRow"></div>
+
+  <div class="progress-pill">🥚 <span id="progress">0</span> / 16</div>
+
+  <div class="eggs-label">PICK THE MISSING NUMBER</div>
+  <div class="eggs" id="eggs"></div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">ROWS COMPLETE!</div>
+    <div class="title-hero">🐲</div>
+    <div class="celeb-count" id="celebCount">All eggs found!</div>
+    <button class="start-btn" id="btnAgain">🐲 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [4,5,6,7,8,9];
+const COLORS = ['ec1','ec2','ec3','ec4','ec5','ec6'];
+
+let roundIdx = 0, promptIdx = 0, solved = 0;
+let currentMissing = null;
+let missingSlotEl = null;
+let hintTimer = null;
+let eggEls = [];
+let busy = false;
+
+function setupPuzzle(){
+  // pick one number from NUMS as the missing one
+  currentMissing = NUMS[Math.floor(Math.random() * NUMS.length)];
+  // Draw the row with that number's slot blanked out
+  const seq = $('seqRow');
+  seq.innerHTML = '';
+  NUMS.forEach(n => {
+    const s = document.createElement('div');
+    s.className = 'seq-slot';
+    s.dataset.n = n;
+    if(n === currentMissing){
+      s.classList.add('missing');
+      s.textContent = '?';
+      missingSlotEl = s;
+    } else {
+      s.textContent = n;
+    }
+    seq.appendChild(s);
+  });
+  // Build the answer eggs at the bottom (all 6 numbers, shuffled)
+  const eggsWrap = $('eggs');
+  eggsWrap.innerHTML = '';
+  eggEls = [];
+  const colors = shuffle(COLORS);
+  shuffle(NUMS).forEach((n, i) => {
+    const e = document.createElement('div');
+    e.className = 'egg-pick';
+    e.dataset.n = n;
+    e.dataset.color = colors[i % colors.length];
+    e.innerHTML = `<div class="egg-pick-disc ${colors[i % colors.length]}"><span class="egg-pick-num">${n}</span></div>`;
+    onTap(e, () => handleEggTap(e, n));
+    eggsWrap.appendChild(e);
+    eggEls.push(e);
+  });
+}
+
+function handleEggTap(el, n){
+  if(busy) return;
+  if(n === currentMissing){
+    busy = true;
+    el.classList.add('flying');
+    audio.tone('sparkle');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    flyEggToSlot(el, n);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('whats_missing');
+    }, 1100);
+  }
+}
+
+function flyEggToSlot(el, n){
+  const sR = el.getBoundingClientRect();
+  const slotR = missingSlotEl.getBoundingClientRect();
+  const tx = slotR.left + slotR.width/2 - sR.width/2;
+  const ty = slotR.top + slotR.height/2 - sR.height/2;
+  const color = el.dataset.color;
+  const fly = document.createElement('div');
+  fly.className = 'flying-egg ' + color;
+  fly.textContent = n;
+  fly.style.left = '0'; fly.style.top = '0';
+  fly.style.width  = sR.width + 'px';
+  fly.style.height = sR.height + 'px';
+  fly.style.transform = `translate(${sR.left}px, ${sR.top}px)`;
+  document.body.appendChild(fly);
+  const peakX = (sR.left + tx) / 2;
+  const peakY = Math.min(sR.top, ty) - 60;
+  fly.animate(
+    [
+      { transform: `translate(${sR.left}px, ${sR.top}px) scale(1) rotate(0)`, offset: 0 },
+      { transform: `translate(${peakX}px, ${peakY}px) scale(1.05) rotate(180deg)`, offset: 0.55 },
+      { transform: `translate(${tx}px, ${ty}px) scale(0.7) rotate(360deg)`, opacity: 0, offset: 1 }
+    ],
+    { duration: 700, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+  );
+  setTimeout(() => {
+    fly.remove();
+    missingSlotEl.classList.remove('missing');
+    missingSlotEl.classList.add('solved');
+    missingSlotEl.textContent = n;
+    $('mama').classList.add('cheer');
+    setTimeout(() => $('mama').classList.remove('cheer'), 700);
+    audio.tone('ding');
+    audio.speakNumber(n);
+    const sR2 = missingSlotEl.getBoundingClientRect();
+    starBurst(sR2.left + sR2.width/2, sR2.top + sR2.height/2);
+    burstConfetti(sR2.left + sR2.width/2, sR2.top + sR2.height/2, 14);
+    solved++;
+    $('progress').textContent = solved;
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(solved >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 700);
+  }, 720);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  setupPuzzle();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('whats_missing');
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    eggEls.forEach(e => {
+      if(Number(e.dataset.n) === currentMissing){
+        e.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakPhrase('whats_missing');
+    scheduleHint();
+  }, 8000);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  clearTimeout(hintTimer);
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${solved} eggs found!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; solved = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

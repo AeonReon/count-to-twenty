@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#16a34a">
+<title>Apple Tree · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fef3c7 0%, #d9f99d 30%, #86efac 70%, #16a34a 100%);
+  color: #14532d;
+}
+.back-home-btn{ color:#14532d; border-color:#fde047; }
+
+.tree{
+  position: absolute; top: 14vh; left: 50%;
+  transform: translateX(-50%); z-index: 1;
+  font-size: clamp(80px, 22vw, 160px);
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
+  pointer-events: none;
+}
+.sun{
+  position: absolute; top: 11vh; right: 6vw;
+  font-size: clamp(40px, 10vw, 64px);
+  filter: drop-shadow(0 0 20px #fde047);
+  animation: heroFloat 3s ease-in-out infinite;
+}
+
+/* basket at the bottom shows the TARGET digit as the hero */
+.basket{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  width: clamp(140px, 32vw, 200px);
+  height: clamp(100px, 22vw, 140px);
+  background: linear-gradient(180deg, #92400e 0%, #78350f 100%);
+  border: 4px solid #422006;
+  border-radius: 14px 14px 26% 26% / 14px 14px 100% 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+}
+.basket::before{
+  content:''; position: absolute; top: 0; left: -8%; right: -8%; height: 8px;
+  background: #422006; border-radius: 4px;
+}
+.basket-label{
+  color: #fde047; font-weight: 900; font-size: 11px;
+  letter-spacing: 1px; margin-bottom: 4px;
+}
+.basket-target{
+  font-size: clamp(54px, 13vw, 84px); color: #fde047;
+  -webkit-text-stroke: 3px #422006;
+  text-shadow: 3px 4px 0 #422006;
+  font-weight: 900; line-height: 1;
+}
+.basket-target-label{
+  color: #fde047; font-weight: 900; font-size: 11px;
+  letter-spacing: 1px; margin-top: 2px;
+}
+
+/* branches arranged in 2 rows × 3 */
+.branches{
+  position: absolute; top: 28vh; left: 0; right: 0; bottom: 18vh;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 2.5vw, 18px);
+  padding: 0 clamp(14px, 4vw, 28px);
+  z-index: 3;
+  align-content: center;
+}
+.branch{
+  position: relative;
+  aspect-ratio: 5 / 4;
+  cursor: pointer; touch-action: manipulation;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(254,243,199,0.85) 100%);
+  border: 4px solid #14532d;
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+  transition: transform 0.15s var(--bounce);
+}
+.branch:active{ transform: scale(0.93); }
+.branch.wobble{ animation: wobble 0.5s ease-in-out; }
+.branch.picked{ animation: pickedPop 0.7s var(--bounce); pointer-events: none; }
+@keyframes pickedPop{
+  0%   { transform: scale(1) rotate(0); }
+  40%  { transform: scale(1.1) rotate(-8deg); background: #fde047; }
+  100% { transform: scale(1) rotate(0); background: #fde047; }
+}
+.branch.picked .branch-reveal{ display: flex; }
+.branch-reveal{
+  display: none;
+  position: absolute; inset: 0;
+  align-items: center; justify-content: center;
+  font-size: clamp(48px, 12vw, 80px);
+  color: #16a34a; font-weight: 900;
+  -webkit-text-stroke: 3px #fff;
+  text-shadow: 2px 3px 0 #14532d;
+}
+.apple{
+  font-size: clamp(18px, 4.5vw, 30px);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  animation: appleSwing 2.4s ease-in-out infinite;
+}
+.apple.empty{ opacity: 0; }
+@keyframes appleSwing{ 0%,100%{ transform: rotate(-4deg) } 50%{ transform: rotate(4deg) } }
+
+/* falling apple animation */
+.falling-apple{
+  position: fixed; font-size: clamp(20px, 5vw, 28px);
+  pointer-events: none; z-index: 200;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #14532d; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#14532d;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #14532d; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#14532d; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">APPLE TREE</div>
+    <div class="title-hero">🍎</div>
+    <div class="title-sub">Count the apples · Pick the right branch!</div>
+    <button class="start-btn" id="btnStart">🍎 Start Picking</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Find</span>
+    <span class="hud-target" id="hudTarget">3</span>
+    <span style="font-size:clamp(13px,3.4vw,18px);font-weight:900;">apples</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="sun">☀️</div>
+  <div class="tree">🌳</div>
+
+  <div class="branches" id="branches"></div>
+
+  <div class="basket">
+    <div class="basket-label">FIND</div>
+    <div class="basket-target" id="basketTarget">3</div>
+    <div class="basket-target-label">APPLES</div>
+  </div>
+
+  <div class="progress-pill">🧺 <span id="progress">0</span> / 16</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">BASKET FULL!</div>
+    <div class="title-hero">🍎</div>
+    <div class="celeb-count" id="celebCount">All apples picked!</div>
+    <button class="start-btn" id="btnAgain">🍎 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [0,1,2,3,4,5];  // window for game 1b
+
+let roundIdx = 0, promptIdx = 0, picked = 0;
+let currentTarget = null;
+let promptList = [];
+let hintTimer = null;
+let branchEls = [];
+let busy = false;
+
+function spawnBranches(){
+  const grid = $('branches');
+  grid.innerHTML = '';
+  branchEls = [];
+  shuffle(NUMS).forEach(n => {
+    const b = document.createElement('div');
+    b.className = 'branch';
+    b.dataset.n = n;
+    let apples = '';
+    for(let i = 0; i < n; i++) apples += `<span class="apple">🍎</span>`;
+    if(n === 0) apples = `<span class="apple empty">🍎</span>`;  // placeholder so branch isn't collapsed
+    b.innerHTML = apples + `<div class="branch-reveal">${n}</div>`;
+    onTap(b, () => handleBranchTap(b, n));
+    grid.appendChild(b);
+    branchEls.push(b);
+  });
+}
+
+function handleBranchTap(el, n){
+  if(busy) return;
+  if(n === currentTarget){
+    busy = true;
+    el.classList.add('picked');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    showApplesFalling(el);
+    picked++;
+    $('progress').textContent = picked;
+    setTimeout(() => audio.speakNumber(n), 350);
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(picked >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 1100);
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('can_you_find');
+      audio.speakNumber(currentTarget);
+    }, 1100);
+  }
+}
+
+function showApplesFalling(el){
+  const apples = el.querySelectorAll('.apple');
+  const basketR = document.querySelector('.basket').getBoundingClientRect();
+  const tx = basketR.left + basketR.width/2;
+  const ty = basketR.top + basketR.height*0.5;
+  apples.forEach((a, i) => {
+    if(a.classList.contains('empty')) return;
+    const aR = a.getBoundingClientRect();
+    const fly = document.createElement('div');
+    fly.className = 'falling-apple';
+    fly.textContent = '🍎';
+    fly.style.left = '0'; fly.style.top = '0';
+    fly.style.transform = `translate(${aR.left}px, ${aR.top}px)`;
+    document.body.appendChild(fly);
+    const peakX = (aR.left + tx) / 2;
+    const peakY = Math.min(aR.top, ty) - 40;
+    fly.animate(
+      [
+        { transform: `translate(${aR.left}px, ${aR.top}px) rotate(0)`, offset: 0 },
+        { transform: `translate(${peakX}px, ${peakY}px) rotate(${(Math.random()-0.5)*120}deg)`, offset: 0.55 },
+        { transform: `translate(${tx}px, ${ty}px) scale(0.5) rotate(360deg)`, opacity: 0, offset: 1 }
+      ],
+      { duration: 700 + i*70, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards', delay: i*40 }
+    );
+    setTimeout(() => fly.remove(), 1200);
+  });
+  const sR = el.getBoundingClientRect();
+  starBurst(sR.left + sR.width/2, sR.top + sR.height/2);
+  burstConfetti(sR.left + sR.width/2, sR.top + sR.height/2, 14);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  currentTarget = promptList[promptIdx];
+  $('hudTarget').textContent = currentTarget;
+  $('basketTarget').textContent = currentTarget;
+  spawnBranches();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('how_many');
+    audio.speakNumber(currentTarget);
+  }, 250);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    branchEls.forEach(b => {
+      if(Number(b.dataset.n) === currentTarget && !b.classList.contains('picked')){
+        b.animate(
+          [{filter:'brightness(1)'},{filter:'brightness(1.5) drop-shadow(0 0 16px #fde047)'},{filter:'brightness(1)'}],
+          {duration:700, iterations:2}
+        );
+      }
+    });
+    audio.clearQueue();
+    audio.speakNumber(currentTarget);
+    scheduleHint();
+  }, 7000);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  promptList = shuffle(NUMS).slice(0, 4);
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  clearTimeout(hintTimer);
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${picked} branches picked!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; picked = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>

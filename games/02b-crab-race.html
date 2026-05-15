@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f97316">
+<title>Crab Race · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #67e8f9 0%, #38bdf8 30%, #fde68a 60%, #fdba74 100%);
+  color: #7c2d12;
+}
+.back-home-btn{ color:#7c2d12; border-color:#fbbf24; }
+
+.sun{
+  position: absolute; top: 10vh; right: 8vw;
+  font-size: clamp(48px, 11vw, 78px);
+  filter: drop-shadow(0 0 22px #fde047);
+  animation: heroFloat 3s ease-in-out infinite;
+}
+.shell{
+  position: absolute; pointer-events: none;
+  font-size: clamp(22px, 5vw, 32px);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+.shell.l{ bottom: 8vh; left: 6vw; }
+.shell.r{ bottom: 12vh; right: 8vw; }
+
+/* RACE TRACK — two horizontal lanes side by side, finish flag on right */
+.track{
+  position: absolute; top: 24vh; left: 0; right: 0; bottom: 22vh;
+  z-index: 2;
+  background: linear-gradient(180deg, transparent 0%, transparent 20%, #fde68a 20%, #fde68a 50%, transparent 50%, transparent 65%, #fdba74 65%, #fdba74 100%);
+}
+.lane{
+  position: absolute; left: 4vw; right: 16vw;
+  height: 30%;
+  z-index: 3;
+}
+.lane.top{ top: 22%; border-bottom: 3px dashed rgba(0,0,0,0.25); }
+.lane.bot{ top: 67%; }
+.lane-label{
+  position: absolute; left: -2px; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.9);
+  border: 3px solid #7c2d12; border-radius: 14px;
+  padding: 4px 10px;
+  font-size: clamp(22px, 5.5vw, 32px); font-weight: 900; color:#7c2d12;
+  -webkit-text-stroke: 1.5px #fff;
+  z-index: 5;
+}
+.finish-flag{
+  position: absolute; right: 8vw;
+  font-size: clamp(40px, 10vw, 64px);
+  z-index: 4; pointer-events: none;
+  animation: flagWave 1s ease-in-out infinite alternate;
+}
+@keyframes flagWave{ 0%{ transform: rotate(-8deg) } 100%{ transform: rotate(8deg) } }
+.finish-flag.top{ top: calc(22% + 5%); }
+.finish-flag.bot{ top: calc(67% + 5%); }
+
+.crab{
+  position: absolute; top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: clamp(70px, 16vw, 110px); height: clamp(70px, 16vw, 110px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 6;
+  transition: left 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  animation: crabIdle 1.2s ease-in-out infinite;
+}
+@keyframes crabIdle{ 0%,100%{ transform: translateY(-50%) rotate(-3deg) } 50%{ transform: translateY(-50%) rotate(3deg) } }
+.crab.scuttle{ animation: scuttle 0.3s ease-in-out; }
+@keyframes scuttle{
+  0%,100%{ transform: translateY(-50%) scale(1) rotate(0); }
+  50%{ transform: translateY(-50%) scale(1.15) rotate(-10deg); }
+}
+.crab-emoji{
+  font-size: clamp(50px, 12vw, 78px);
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
+}
+.crab-label{
+  position: absolute; top: -10px; left: 50%;
+  transform: translateX(-50%);
+  background: #fff; color:#7c2d12;
+  border: 3px solid #7c2d12; border-radius: 10px;
+  padding: 2px 8px;
+  font-size: clamp(20px, 5vw, 30px); font-weight: 900;
+  -webkit-text-stroke: 1.2px rgba(0,0,0,0.4);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+}
+
+.tap-zone{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  width: clamp(220px, 56vw, 380px);
+  height: clamp(110px, 24vw, 160px);
+  background: linear-gradient(180deg, #fef3c7 0%, #fde047 100%);
+  border: 5px solid #7c2d12;
+  border-radius: 22px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 -6px 10px rgba(0,0,0,0.15);
+  transition: transform 0.08s var(--bounce);
+}
+.tap-zone:active{ transform: translateX(-50%) scale(0.95); }
+.tap-zone-label{
+  font-size: 12px; font-weight: 900; color:#7c2d12;
+  letter-spacing: 1px; margin-bottom: 4px;
+}
+.tap-zone-target{
+  font-size: clamp(48px, 12vw, 72px);
+  color:#dc2626;
+  -webkit-text-stroke: 3px #7c2d12;
+  text-shadow: 3px 4px 0 #7c2d12;
+  font-weight: 900;
+  line-height: 1;
+}
+.tap-zone-sub{
+  font-size: 13px; font-weight: 900; color:#7c2d12; margin-top: 4px;
+}
+.tap-zone.pulse{ animation: tapPulse 0.5s ease-out; }
+@keyframes tapPulse{
+  0%   { box-shadow: 0 8px 18px rgba(0,0,0,0.3), 0 0 0 0 rgba(220,38,38,0.7); }
+  100% { box-shadow: 0 8px 18px rgba(0,0,0,0.3), 0 0 0 40px rgba(220,38,38,0); }
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  left: 50%; transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #7c2d12; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#7c2d12;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #7c2d12; text-shadow:4px 6px 0 #fbbf24; }
+.celeb-count{ color:#7c2d12; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">CRAB RACE</div>
+    <div class="title-hero">🦀</div>
+    <div class="title-sub">Tap fast · Help your crab win!</div>
+    <button class="start-btn" id="btnStart">🦀 Start Racing</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Cheer crab</span>
+    <span class="hud-target" id="hudTarget">5</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="sun">☀️</div>
+  <div class="shell l">🐚</div>
+  <div class="shell r">⭐</div>
+
+  <div class="track">
+    <div class="lane top">
+      <span class="lane-label" id="labelTop">5</span>
+      <div class="crab" id="crabTop">
+        <span class="crab-label" id="labelTopBig">5</span>
+        <span class="crab-emoji">🦀</span>
+      </div>
+    </div>
+    <div class="lane bot">
+      <span class="lane-label" id="labelBot">3</span>
+      <div class="crab" id="crabBot">
+        <span class="crab-label" id="labelBotBig">3</span>
+        <span class="crab-emoji">🦀</span>
+      </div>
+    </div>
+    <div class="finish-flag top">🏁</div>
+    <div class="finish-flag bot">🏁</div>
+  </div>
+
+  <div class="tap-zone" id="tapZone">
+    <div class="tap-zone-label">TAP FOR CRAB</div>
+    <div class="tap-zone-target" id="tapTarget">5</div>
+    <div class="tap-zone-sub">tap fast!</div>
+  </div>
+
+  <div class="progress-pill">🏆 wins: <span id="wins">0</span> / 4</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">CHAMPION!</div>
+    <div class="title-hero">🦀</div>
+    <div class="celeb-count" id="celebCount">All races won!</div>
+    <button class="start-btn" id="btnAgain">🦀 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [1,2,3,4,5,6];
+
+const STEPS_TO_WIN = 10;  // total taps to cross the finish line
+let roundIdx = 0, wins = 0;
+let crabTopNum = 5, crabBotNum = 3;
+let crabTopSteps = 0, crabBotSteps = 0;
+let target = 5;
+let raceActive = false;
+let opponentTimer = null;
+
+function pickPair(){
+  // pick two distinct nums and one as target
+  const shuffled = shuffle(NUMS);
+  return [shuffled[0], shuffled[1]];
+}
+
+function setupRace(){
+  const [a, b] = pickPair();
+  crabTopNum = a; crabBotNum = b;
+  target = Math.random() < 0.5 ? a : b;
+  crabTopSteps = 0; crabBotSteps = 0;
+  $('labelTop').textContent = a;
+  $('labelBot').textContent = b;
+  $('labelTopBig').textContent = a;
+  $('labelBotBig').textContent = b;
+  $('crabTop').style.left = '0';
+  $('crabBot').style.left = '0';
+  $('tapTarget').textContent = target;
+  $('hudTarget').textContent = target;
+}
+
+function moveCrab(which, steps){
+  const lane = which === 'top' ? $('crabTop') : $('crabBot');
+  const pct = (steps / STEPS_TO_WIN) * 90;
+  lane.style.left = pct + '%';
+  lane.classList.add('scuttle');
+  setTimeout(() => lane.classList.remove('scuttle'), 300);
+}
+
+function handleTap(){
+  if(!raceActive) return;
+  // every tap advances the target crab
+  $('tapZone').classList.add('pulse');
+  setTimeout(() => $('tapZone').classList.remove('pulse'), 400);
+  audio.tone('pop');
+  if(target === crabTopNum){
+    crabTopSteps++;
+    moveCrab('top', crabTopSteps);
+    if(crabTopSteps >= STEPS_TO_WIN) finishRace('top');
+  } else {
+    crabBotSteps++;
+    moveCrab('bot', crabBotSteps);
+    if(crabBotSteps >= STEPS_TO_WIN) finishRace('bot');
+  }
+}
+
+// Opponent crab also advances, slowly, on its own
+function tickOpponent(){
+  if(!raceActive) return;
+  if(target === crabTopNum){
+    crabBotSteps++;
+    moveCrab('bot', crabBotSteps);
+    if(crabBotSteps >= STEPS_TO_WIN) finishRace('bot');
+  } else {
+    crabTopSteps++;
+    moveCrab('top', crabTopSteps);
+    if(crabTopSteps >= STEPS_TO_WIN) finishRace('top');
+  }
+}
+
+function finishRace(winner){
+  if(!raceActive) return;
+  raceActive = false;
+  clearInterval(opponentTimer);
+  const targetIsTop = target === crabTopNum;
+  const playerWon = (winner === 'top' && targetIsTop) || (winner === 'bot' && !targetIsTop);
+  if(playerWon){
+    wins++;
+    $('wins').textContent = wins;
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    const winCrab = winner === 'top' ? $('crabTop') : $('crabBot');
+    const r = winCrab.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    burstConfetti(r.left + r.width/2, r.top + r.height/2, 24);
+  } else {
+    // Opponent won — gentle response (no real loss)
+    audio.clearQueue();
+    audio.speakPhrase('lets_play');
+  }
+  audio.tone('ding');
+  setTimeout(() => audio.speakNumber(target), 700);
+  roundIdx++;
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1500);
+  } else {
+    setTimeout(startNewRace, 1700);
+  }
+}
+
+function startNewRace(){
+  setupRace();
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  showBanner('Race ' + (roundIdx+1), 'Cheer crab ' + target);
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('lets_go');
+    setTimeout(() => audio.speakNumber(target), 700);
+    raceActive = true;
+    // Opponent moves slower than the player can tap → players almost always win if they tap fast
+    opponentTimer = setInterval(tickOpponent, 1100);
+  }, 1300);
+}
+
+function showCeleb(){
+  raceActive = false;
+  clearInterval(opponentTimer);
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${wins} race${wins === 1 ? '' : 's'} won!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; wins = 0;
+  $('wins').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startNewRace, 1400);
+}
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('tapZone'), () => handleTap());
+</script>
+</body>
+</html>

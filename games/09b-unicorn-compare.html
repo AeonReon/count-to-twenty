@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#a855f7">
+<title>Unicorn Compare · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #fce7f3 0%, #f0abfc 30%, #c4b5fd 60%, #a5b4fc 100%);
+  color: #4c1d95;
+}
+.back-home-btn{ color:#4c1d95; border-color:#fde047; }
+
+.rainbow{
+  position: absolute; top: 8vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(70px, 18vw, 130px);
+  filter: drop-shadow(0 6px 14px rgba(255,255,255,0.5));
+  pointer-events: none;
+  animation: heroFloat 3s ease-in-out infinite;
+}
+
+.heart{
+  position: absolute; pointer-events: none; opacity: 0.55;
+  font-size: clamp(14px, 3vw, 22px);
+  animation: heartFloat var(--dur,5s) ease-in-out infinite var(--delay,0s);
+}
+@keyframes heartFloat{ 0%,100%{ transform: translateY(0) rotate(-6deg); opacity: 0.4 } 50%{ transform: translateY(-18px) rotate(6deg); opacity: 0.8 } }
+
+/* big question prompt */
+.qprompt{
+  position: absolute; top: 22vh; left: 50%;
+  transform: translateX(-50%); z-index: 5;
+  background: linear-gradient(180deg, #fde047 0%, #fbbf24 100%);
+  border: 5px solid #4c1d95; border-radius: 18px;
+  padding: 10px 22px;
+  font-size: clamp(20px, 5vw, 32px); font-weight: 900; color:#4c1d95;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+/* two unicorn-card options side by side */
+.cards{
+  position: absolute; top: 32vh; left: 0; right: 0;
+  display: flex; justify-content: center; align-items: center;
+  gap: clamp(14px, 4vw, 32px);
+  padding: 0 clamp(14px, 4vw, 32px);
+  z-index: 4;
+}
+.uni-card{
+  position: relative;
+  width: clamp(120px, 32vw, 220px);
+  aspect-ratio: 3 / 4;
+  cursor: pointer; touch-action: manipulation;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #fdf2f8 0%, #fbcfe8 100%);
+  border: 5px solid #4c1d95;
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25), inset 0 -6px 14px rgba(0,0,0,0.12);
+  transition: transform 0.15s var(--bounce);
+}
+.uni-card:active{ transform: scale(0.94); }
+.uni-emoji{
+  font-size: clamp(50px, 14vw, 88px);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+}
+.uni-num{
+  font-size: clamp(56px, 14vw, 92px);
+  color: #4c1d95;
+  -webkit-text-stroke: 3px #fff;
+  text-shadow: 3px 4px 0 #fde047, 0 6px 18px rgba(76,29,149,0.4);
+  font-weight: 900; line-height: 1;
+}
+.uni-card.wobble{ animation: wobble 0.5s ease-in-out; }
+.uni-card.win{ animation: winPop 0.7s var(--bounce); }
+@keyframes winPop{
+  0%{ transform: scale(1); }
+  40%{ transform: scale(1.2) rotate(-8deg); background: linear-gradient(180deg, #fde047, #fbbf24); }
+  100%{ transform: scale(1.1); background: linear-gradient(180deg, #fde047, #fbbf24); }
+}
+.uni-card.lose{ animation: loseShrink 0.6s ease-out forwards; opacity: 0.5; }
+@keyframes loseShrink{ to { transform: scale(0.85); } }
+
+/* progress + golden horn collection */
+.horn-shelf{
+  position: fixed; bottom: 1vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 4px solid #4c1d95; border-radius: 18px;
+  padding: 8px 14px;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.horn-shelf-label{
+  font-size: 11px; font-weight: 900; color:#4c1d95;
+  letter-spacing: 1px; margin-bottom: 4px;
+}
+.horn-row{
+  display: flex; gap: 4px; min-height: 28px; align-items: flex-end;
+}
+.horn{
+  font-size: clamp(22px, 5vw, 28px);
+  animation: hornPop 0.6s var(--bounce);
+}
+@keyframes hornPop{ 0%{ transform: scale(0) rotate(-180deg); } 100%{ transform: scale(1) rotate(0); } }
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid #4c1d95; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#4c1d95;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #4c1d95; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#4c1d95; text-shadow:2px 2px 0 #fff; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">UNICORN COMPARE</div>
+    <div class="title-hero">🦄</div>
+    <div class="title-sub">Pick the bigger (or smaller) number!</div>
+    <button class="start-btn" id="btnStart">🦄 Start Magic</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt" id="hudPrompt">Which is bigger?</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="rainbow">🌈</div>
+
+  <div class="qprompt" id="qprompt">WHICH IS BIGGER?</div>
+
+  <div class="cards">
+    <div class="uni-card" id="cardL">
+      <span class="uni-emoji">🦄</span>
+      <span class="uni-num" id="numL">9</span>
+    </div>
+    <div class="uni-card" id="cardR">
+      <span class="uni-emoji">🦄</span>
+      <span class="uni-num" id="numR">13</span>
+    </div>
+  </div>
+
+  <div class="progress-pill">🦄 <span id="progress">0</span> / 16</div>
+
+  <div class="horn-shelf">
+    <div class="horn-shelf-label">GOLDEN HORNS</div>
+    <div class="horn-row" id="hornRow"></div>
+  </div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">RAINBOW WIN!</div>
+    <div class="title-hero">🦄</div>
+    <div class="celeb-count" id="celebCount">All horns collected!</div>
+    <button class="start-btn" id="btnAgain">🦄 Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [8,9,10,11,12,13];
+
+let roundIdx = 0, promptIdx = 0, won = 0;
+let leftNum = 0, rightNum = 0;
+let mode = 'bigger';  // 'bigger' or 'smaller'
+let target = 0;       // the correct answer
+let busy = false;
+let hintTimer = null;
+
+function setupPrompt(){
+  // alternate bigger/smaller, randomize pair
+  mode = Math.random() < 0.5 ? 'bigger' : 'smaller';
+  let a, b;
+  do {
+    a = NUMS[Math.floor(Math.random()*NUMS.length)];
+    b = NUMS[Math.floor(Math.random()*NUMS.length)];
+  } while(a === b);
+  leftNum = a; rightNum = b;
+  target = mode === 'bigger' ? Math.max(a, b) : Math.min(a, b);
+  $('numL').textContent = leftNum;
+  $('numR').textContent = rightNum;
+  $('qprompt').textContent = mode === 'bigger' ? 'WHICH IS BIGGER?' : 'WHICH IS SMALLER?';
+  $('hudPrompt').textContent = mode === 'bigger' ? 'Which is bigger?' : 'Which is smaller?';
+  $('cardL').classList.remove('win','lose','wobble');
+  $('cardR').classList.remove('win','lose','wobble');
+}
+
+function handleCardTap(card, value){
+  if(busy) return;
+  if(value === target){
+    busy = true;
+    card.classList.add('win');
+    const other = card === $('cardL') ? $('cardR') : $('cardL');
+    other.classList.add('lose');
+    audio.tone('sparkle');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    clearTimeout(hintTimer);
+    setTimeout(() => audio.speakNumber(value), 600);
+    addHorn();
+    won++;
+    $('progress').textContent = won;
+    const r = card.getBoundingClientRect();
+    starBurst(r.left + r.width/2, r.top + r.height/2);
+    burstConfetti(r.left + r.width/2, r.top + r.height/2, 16);
+    promptIdx++;
+    setTimeout(() => {
+      busy = false;
+      if(won >= 16) finishGameFlow();
+      else nextPrompt();
+    }, 1400);
+  } else {
+    card.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => card.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      const phrase = mode === 'bigger' ? 'which_number' : 'which_number';
+      audio.speakPhrase(phrase);
+    }, 1100);
+  }
+}
+
+function addHorn(){
+  const row = $('hornRow');
+  const h = document.createElement('span');
+  h.className = 'horn';
+  h.textContent = '🦄';
+  row.appendChild(h);
+}
+
+function nextPrompt(){
+  if(promptIdx >= 4){
+    finishRound();
+    return;
+  }
+  setupPrompt();
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('which_number');
+  }, 300);
+  scheduleHint();
+}
+
+function scheduleHint(){
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    const winCard = target === leftNum ? $('cardL') : $('cardR');
+    winCard.animate(
+      [{filter:'brightness(1)'},{filter:'brightness(1.55) drop-shadow(0 0 18px #fde047)'},{filter:'brightness(1)'}],
+      {duration:700, iterations:2}
+    );
+    audio.clearQueue();
+    audio.speakNumber(target);
+    scheduleHint();
+  }, 8000);
+}
+
+function startRound(){
+  promptIdx = 0;
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  showBanner('Round ' + (roundIdx+1));
+  setTimeout(nextPrompt, 1300);
+}
+
+function finishRound(){
+  clearTimeout(hintTimer);
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(finishGameFlow, 800);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function finishGameFlow(){
+  clearTimeout(hintTimer);
+  for(let i = 0; i < 5; i++){
+    setTimeout(() => burstConfetti(Math.random()*innerWidth, innerHeight*0.4, 28), i*220);
+  }
+  setTimeout(showCeleb, 1500);
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${won} comparisons won!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; won = 0;
+  $('progress').textContent = '0';
+  $('hornRow').innerHTML = '';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+// floating hearts background
+(function(){
+  const hearts = ['💖','💜','💗','🌸','✨'];
+  for(let i = 0; i < 14; i++){
+    const h = document.createElement('div');
+    h.className = 'heart';
+    h.textContent = pick(hearts);
+    h.style.top = Math.random()*70 + 'vh';
+    h.style.left = Math.random()*100 + 'vw';
+    h.style.setProperty('--dur', (3 + Math.random()*4) + 's');
+    h.style.setProperty('--delay', (-Math.random()*5) + 's');
+    document.body.appendChild(h);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('cardL'), () => handleCardTap($('cardL'), leftNum));
+onTap($('cardR'), () => handleCardTap($('cardR'), rightNum));
+</script>
+</body>
+</html>

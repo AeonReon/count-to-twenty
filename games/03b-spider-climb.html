@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#4c1d95">
+<title>Spider Climb · aha!</title>
+<link rel="stylesheet" href="../js/engine.css">
+<style>
+html, body{
+  background: linear-gradient(180deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+  color: #ede9fe;
+}
+.back-home-btn{ color:#312e81; border-color:#fde047; background:#ede9fe; }
+
+.star-bg{ position: absolute; pointer-events: none; color: #fde047; font-size: 14px;
+  animation: twinkle var(--dur,2s) ease-in-out infinite var(--delay,0s); opacity: 0.55; }
+@keyframes twinkle{ 0%,100%{ opacity:0.3 } 50%{ opacity:1 } }
+
+/* spider mama at the top of the web */
+.mama-spider{
+  position: absolute; top: 11vh; left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(56px, 14vw, 90px);
+  z-index: 5;
+  filter: drop-shadow(0 0 16px #fde047);
+  animation: heroFloat 2.4s ease-in-out infinite;
+}
+.mama-spider.cheer{ animation: mamaCheer 0.7s var(--bounce); }
+@keyframes mamaCheer{
+  0%{ transform: translateX(-50%) scale(1); }
+  50%{ transform: translateX(-50%) scale(1.25) rotate(15deg); }
+  100%{ transform: translateX(-50%) scale(1); }
+}
+
+/* the web — strands radiating */
+.web{
+  position: absolute; top: 16vh; left: 0; right: 0; bottom: 22vh;
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.18) 0%, transparent 70%),
+    repeating-radial-gradient(circle at 50% 0%, transparent 0 30px, rgba(255,255,255,0.18) 30px 31px);
+}
+.web::after{
+  content:'';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+/* climb track — vertical line up the center, kid taps spiders to climb */
+.climb-area{
+  position: absolute; top: 18vh; left: 0; right: 0; bottom: 22vh;
+  z-index: 3;
+}
+.spider{
+  position: absolute;
+  width: clamp(70px, 16vw, 100px); height: clamp(70px, 16vw, 100px);
+  cursor: pointer; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s var(--bounce);
+}
+.spider:active{ transform: scale(0.92); }
+.spider-body{
+  position: absolute; inset: 12%;
+  background: radial-gradient(circle at 35% 30%, #4c1d95 0%, #1e1b4b 80%);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+.spider-leg{
+  position: absolute; top: 50%; transform-origin: center;
+  width: 60%; height: 3px;
+  background: #fff;
+}
+.spider-leg.l1{ left: -30%; transform: rotate(-30deg); }
+.spider-leg.l2{ left: -30%; transform: rotate(0deg); }
+.spider-leg.l3{ left: -30%; transform: rotate(30deg); }
+.spider-leg.r1{ right: -30%; transform: rotate(30deg); }
+.spider-leg.r2{ right: -30%; transform: rotate(0deg); }
+.spider-leg.r3{ right: -30%; transform: rotate(-30deg); }
+.spider-num{
+  position: relative; z-index: 3;
+  font-size: clamp(26px, 7vw, 42px); color:#fde047;
+  -webkit-text-stroke: 2px #1e1b4b;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  font-weight: 900;
+}
+.spider.wobble{ animation: wobble 0.5s ease-in-out; }
+.spider.climbed{ pointer-events: none; }
+.spider.climbed .spider-body{ background: radial-gradient(circle at 35% 30%, #fde047 0%, #f59e0b 80%); }
+.spider.climbed .spider-num{ color: #1e1b4b; -webkit-text-stroke-color: #fde047; }
+
+/* ladder of "next to climb" indicator */
+.ladder{
+  position: fixed; bottom: 2vh; left: 50%;
+  transform: translateX(-50%); z-index: 7;
+  background: linear-gradient(180deg, #fde047 0%, #fbbf24 100%);
+  border: 4px solid #1e1b4b; border-radius: 22px;
+  padding: 8px 16px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+}
+.ladder-label{
+  font-size: 13px; font-weight: 900; color:#1e1b4b;
+  letter-spacing: 1px;
+}
+.ladder-target{
+  font-size: clamp(42px, 11vw, 64px); color: #be123c;
+  -webkit-text-stroke: 3px #1e1b4b;
+  text-shadow: 2px 3px 0 #1e1b4b;
+  font-weight: 900; line-height: 1;
+}
+
+.progress-pill{
+  position: fixed; top: max(74px, env(safe-area-inset-top, 12px) + 70px);
+  right: 14px; z-index: 7;
+  background: rgba(254,240,138,0.95);
+  border: 3px solid #1e1b4b; border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 900; color:#1e1b4b;
+}
+
+.celeb-big{ -webkit-text-stroke:3px #1e1b4b; text-shadow:4px 6px 0 #fde047; }
+.celeb-count{ color:#fde047; text-shadow:2px 2px 0 #1e1b4b; }
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-home-btn">← Home</a>
+
+<div id="scrTitle" class="screen active">
+  <div class="title-wrap">
+    <div class="title-big">SPIDER CLIMB</div>
+    <div class="title-hero">🕷️</div>
+    <div class="title-sub">Help spiders climb home in order — smallest first!</div>
+    <button class="start-btn" id="btnStart">🕷️ Start Climbing</button>
+  </div>
+</div>
+
+<div id="scrGame" class="screen">
+  <div class="hud">
+    <span class="hud-prompt">Tap spider</span>
+    <span class="hud-target" id="hudTarget">2</span>
+  </div>
+  <div class="hud-round" id="hudRound">1/4</div>
+
+  <div class="mama-spider" id="mama">🕸️</div>
+  <div class="web"></div>
+  <div class="climb-area" id="climbArea"></div>
+
+  <div class="ladder">
+    <span class="ladder-label">NEXT</span>
+    <span class="ladder-target" id="ladderTarget">2</span>
+  </div>
+
+  <div class="progress-pill">🕷️ <span id="progress">0</span> / 16</div>
+
+  <div class="banner" id="banner">Round 1</div>
+</div>
+
+<div id="scrCeleb" class="screen">
+  <div class="celeb-wrap">
+    <div class="celeb-big">ALL HOME!</div>
+    <div class="title-hero">🕷️</div>
+    <div class="celeb-count" id="celebCount">All spiders climbed up!</div>
+    <button class="start-btn" id="btnAgain">🕷️ Play Again</button>
+  </div>
+</div>
+
+<canvas id="fxCanvas" style="position:fixed;inset:0;z-index:150;pointer-events:none"></canvas>
+
+<script src="../js/engine.js"></script>
+<script>
+const audio = new GameAudio({ base: '../audio/' });
+const NUMS = [2,3,4,5,6,7];  // window for 3b
+
+let roundIdx = 0, climbed = 0, nextIdx = 0;
+let currentOrder = [];  // sorted ascending — the order to tap
+let busy = false;
+let spiderEls = [];
+
+function spawnSpiders(){
+  const area = $('climbArea');
+  area.innerHTML = '';
+  spiderEls = [];
+  // place 6 spiders randomly within the area
+  const w = area.clientWidth || innerWidth;
+  const h = area.clientHeight || (innerHeight*0.55);
+  const positions = grid6(w, h);
+  shuffle(NUMS).forEach((n, i) => {
+    const s = document.createElement('div');
+    s.className = 'spider';
+    s.dataset.n = n;
+    s.innerHTML = `
+      <div class="spider-leg l1"></div><div class="spider-leg l2"></div><div class="spider-leg l3"></div>
+      <div class="spider-leg r1"></div><div class="spider-leg r2"></div><div class="spider-leg r3"></div>
+      <div class="spider-body"></div>
+      <span class="spider-num">${n}</span>`;
+    s.style.left = positions[i].x + 'px';
+    s.style.top  = positions[i].y + 'px';
+    onTap(s, () => handleSpiderTap(s, n));
+    area.appendChild(s);
+    spiderEls.push(s);
+  });
+}
+
+function grid6(w, h){
+  const cols = 3, rows = 2;
+  const cellW = w / cols, cellH = h / rows;
+  const items = [];
+  for(let r = 0; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      items.push({
+        x: cellW * c + cellW*0.5 - 50 + (Math.random()-0.5)*cellW*0.3,
+        y: cellH * r + cellH*0.5 - 50 + (Math.random()-0.5)*cellH*0.25
+      });
+    }
+  }
+  return items;
+}
+
+function handleSpiderTap(el, n){
+  if(busy || el.classList.contains('climbed')) return;
+  const want = currentOrder[nextIdx];
+  if(n === want){
+    busy = true;
+    el.classList.add('climbed');
+    audio.tone('ding');
+    audio.clearQueue();
+    audio.speakCategory('correct');
+    // Spider climbs UP toward mama
+    const mR = $('mama').getBoundingClientRect();
+    const sR = el.getBoundingClientRect();
+    const dx = (mR.left + mR.width/2) - (sR.left + sR.width/2);
+    const dy = (mR.top + mR.height/2) - (sR.top + sR.height/2);
+    el.animate(
+      [
+        { transform: 'translate(0,0) scale(1) rotate(0)' },
+        { transform: `translate(${dx*0.5}px, ${dy*0.5}px) scale(0.8) rotate(180deg)`, offset: 0.5 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.3) rotate(360deg)`, opacity: 0 }
+      ],
+      { duration: 900, easing: 'cubic-bezier(0.45,0.05,0.55,0.95)', fill: 'forwards' }
+    );
+    $('mama').classList.add('cheer');
+    setTimeout(() => $('mama').classList.remove('cheer'), 700);
+    starBurst(mR.left + mR.width/2, mR.top + mR.height/2);
+    nextIdx++;
+    climbed++;
+    $('progress').textContent = climbed;
+    if(nextIdx >= currentOrder.length){
+      // Round done
+      setTimeout(() => { busy = false; finishRound(); }, 1000);
+    } else {
+      const next = currentOrder[nextIdx];
+      $('hudTarget').textContent = next;
+      $('ladderTarget').textContent = next;
+      setTimeout(() => {
+        audio.clearQueue();
+        audio.speakNumber(next);
+        busy = false;
+      }, 950);
+    }
+  } else {
+    el.classList.add('wobble');
+    audio.tone('wrong');
+    audio.clearQueue();
+    audio.speakCategory('wrong');
+    setTimeout(() => el.classList.remove('wobble'), 600);
+    setTimeout(() => {
+      audio.speakPhrase('which_number');
+      audio.speakNumber(want);
+    }, 1100);
+  }
+}
+
+function startRound(){
+  $('hudRound').textContent = (roundIdx+1) + '/4';
+  // shuffle window then SORT for the tap-in-order target sequence
+  currentOrder = NUMS.slice().sort((a, b) => a - b);
+  nextIdx = 0;
+  $('hudTarget').textContent = currentOrder[0];
+  $('ladderTarget').textContent = currentOrder[0];
+  spawnSpiders();
+  showBanner('Round ' + (roundIdx+1), 'Smallest first!');
+  setTimeout(() => {
+    audio.clearQueue();
+    audio.speakPhrase('tap_the_number');
+    audio.speakNumber(currentOrder[0]);
+  }, 1300);
+}
+
+function finishRound(){
+  roundIdx++;
+  audio.clearQueue();
+  audio.speakCategory('round-complete');
+  if(roundIdx >= 4){
+    setTimeout(showCeleb, 1100);
+  } else {
+    setTimeout(startRound, 1500);
+  }
+}
+
+function showCeleb(){
+  showScreen('scrCeleb');
+  $('celebCount').textContent = `${climbed} spiders climbed home!`;
+  audio.clearQueue();
+  audio.speakCategory('game-complete');
+  setTimeout(() => { for(let i=0;i<5;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 30); }, 100);
+  setTimeout(() => { for(let i=0;i<4;i++) burstConfetti(Math.random()*innerWidth, innerHeight*0.3, 25); }, 600);
+}
+
+function startGame(){
+  roundIdx = 0; climbed = 0;
+  $('progress').textContent = '0';
+  showScreen('scrGame');
+  audio.startMusic();
+  audio.speakCategory('greetings');
+  setTimeout(startRound, 1400);
+}
+
+(function(){
+  for(let i = 0; i < 50; i++){
+    const s = document.createElement('div');
+    s.className = 'star-bg'; s.textContent = '✦';
+    s.style.top = Math.random()*70 + 'vh';
+    s.style.left = Math.random()*100 + 'vw';
+    s.style.fontSize = (6 + Math.random()*14) + 'px';
+    s.style.setProperty('--dur', (1 + Math.random()*3) + 's');
+    s.style.setProperty('--delay', (-Math.random()*3) + 's');
+    document.body.appendChild(s);
+  }
+})();
+
+initFx();
+onTap($('btnStart'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+onTap($('btnAgain'), () => { audio.unlock(); audio.tone('whoosh'); startGame(); });
+</script>
+</body>
+</html>
